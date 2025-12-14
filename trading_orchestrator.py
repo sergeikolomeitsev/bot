@@ -9,7 +9,7 @@
 import logging
 import traceback
 import threading, time
-
+from datetime import datetime
 
 class TradingOrchestrator:
     """
@@ -49,12 +49,23 @@ class TradingOrchestrator:
 
     def _heartbeat_loop(self):
         interval_sec = self.cfg.trading.monitoring_interval_minutes * 60
+        print(f"[{datetime.now()}] 🚦 Heartbeat LOOP started. Interval={interval_sec} сек.")
 
         while True:
             try:
+                print(f"[{datetime.now()}] ⏳ Сборка heartbeat summary...")
                 summary = self.di.build_heartbeat_summary()
-                self.bot.send_heartbeat(summary)
-            except Exception as e:
-                self.bot.send_message(f"Heartbeat error: {e}")
+                print(f"[{datetime.now()}] ✅ Сформирован heartbeat summary:\n{summary}")
 
+                print(f"[{datetime.now()}] 📤 Отправка heartbeat в Telegram...")
+                result = self.bot.send_heartbeat(summary)
+                print(f"[{datetime.now()}] 📨 Результат отправки heartbeat в Telegram: {result}")
+            except Exception as e:
+                print(f"[{datetime.now()}] 🛑 Exception в heartbeat loop: {e}")
+                try:
+                    self.bot.send_message(f"Heartbeat error: {e}")
+                except Exception as inner:
+                    print(f"[{datetime.now()}] ⚡️ Ошибка при отправке сообщения об ошибке: {inner}")
+
+            print(f"[{datetime.now()}] 💤 Жду {interval_sec} сек до следующего heartbeat...\n")
             time.sleep(interval_sec)

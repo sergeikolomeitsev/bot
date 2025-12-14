@@ -48,7 +48,11 @@ class TelegramBot:
             "chat_id": self.chat_id,
             "text": text
         }
-        return self._post("sendMessage", data=data)
+        response = self._post("sendMessage", data=data)
+        print(">>> TELEGRAM API RESPONSE:", response)
+        if not response or not response.get("ok"):
+            self.logger.error(f"Telegram send_message failed: {response}")
+        return response
 
     # ------------------------------------------------------------
     # PUBLIC — SEND PNG IMAGE

@@ -1,17 +1,16 @@
 # ============================================================
-# HEARTBEAT BUILDER v9.6 — AI PRIME TRADING BOT
+# HEARTBEAT BUILDER v9.7 — AI PRIME TRADING BOT
 # ------------------------------------------------------------
 # Генерирует расширенный статус:
-# • Активная стратегия и её состояние
+# • Активная стратегия и её состояние (с описанием)
 # • Freedom multiplier
-# • Позиции и PnL
+# • Позиции и PnL (unrealized и realized)
 # • Параметры индикаторов по каждому символу
 # • Последние сигналы
 # • Количество свечей истории
 # ============================================================
 
 from typing import Dict, Any
-
 
 class HeartbeatBuilder:
 
@@ -39,10 +38,10 @@ class HeartbeatBuilder:
         snapshot = self.market.get_snapshot()
 
         out = []
-        out.append("❤️ HEARTBEAT v9.6 — MARKET STATUS\n")
+        out.append("❤️ HEARTBEAT v9.7 — MARKET STATUS\n")
 
         # =====================================================
-        # ACTIVE STRATEGY
+        # ACTIVE STRATEGY + ОПИСАНИЕ
         # =====================================================
         strategy = self.ai.get_active_strategy()
         strat_name = strategy.__class__.__name__ if strategy else "None"
@@ -50,7 +49,14 @@ class HeartbeatBuilder:
         out.append("=== ACTIVE STRATEGY ===")
         out.append(f"• {strat_name} ({'Experimental' if self.ai.experimental_active else 'Base'})")
         out.append(f"• Freedom Multiplier: {self.di.freedom_manager.get_multiplier():.2f}")
-        out.append(f"• A/B Testing: {'ON' if self.ai.experimental_active else 'OFF'}\n")
+        out.append(f"• A/B Testing: {'ON' if self.ai.experimental_active else 'OFF'}")
+        # Добавим описание стратегии, если оно есть
+        if strategy is not None:
+            if hasattr(strategy, "description"):
+                out.append(f"• {strategy.description}")
+            elif hasattr(strategy, "get_description"):
+                out.append(f"• {strategy.get_description()}")
+        out.append("")
 
         # =====================================================
         # PORTFOLIO
@@ -66,9 +72,10 @@ class HeartbeatBuilder:
                 price = snapshot.get(sym)
                 pnl = self.portfolio.calc_pnl(sym, price) if price else None
                 out.append(
-                    f"{sym} → entry {pos['entry_price']} | now {price} | PnL {pnl:+.2f}"
+                    f"{sym} → entry {pos['entry_price']} | now {price} | PnL {pnl if pnl is not None else 'n/a'}"
                 )
-            out.append("")
+            # Добавить суммарный реализованный профит
+            out.append(f"\n💰 Realized PnL (total): {self.portfolio.realized_pnl:.2f}\n")
 
         # =====================================================
         # TECHNICAL INDICATORS
@@ -78,7 +85,7 @@ class HeartbeatBuilder:
         for sym in symbols:
             hist = self.market.get_history(sym)
             if not hist or len(hist) < 20:
-                out.append(f"{sym}: insufficient history ({len(hist)})")
+                out.append(f"{sym}: insufficient history ({len(hist) if hist else 0})")
                 continue
 
             price = snapshot.get(sym)
@@ -106,7 +113,7 @@ class HeartbeatBuilder:
                 continue
 
             # получаем сигнал (без исполнения)
-            result = self.engine.process(snapshot, sym, return_explanation=False)
+            result = self.engine.process(snapshot, sym, history=hist, return_explanation=False)
             if not result:
                 continue
 

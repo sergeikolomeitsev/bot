@@ -27,20 +27,18 @@ class VTRStrategy:
     # ------------------------------------------------------------
     # PUBLIC — MAIN ENTRY
     # ------------------------------------------------------------
-    def generate_signal(self, snapshot: Dict[str, Any], symbol: str) -> Optional[Dict[str, Any]]:
+    def generate_signal(self, snapshot: Dict[str, Any], symbol: str, history: Optional[list] = None) -> Optional[
+        Dict[str, Any]]:
         """
-        Генерирует базовый сигнальный объект.
+        Генерирует базовый сигнальный объект на реальной истории.
         """
         price = snapshot.get(symbol)
-        if price is None:
+        if price is None or history is None or len(history) < 20:
             return None
 
-        # Простейшая логика на EMA + GAP
-        prices = [price * (0.999 + i * 0.0001) for i in range(30)]  # временная модель данных
-
-        ema_fast = self.analyzer.ema(prices, 5)
-        ema_slow = self.analyzer.ema(prices, 14)
-        gap_val = self.analyzer.gap(prices)
+        ema_fast = self.analyzer.ema(history, 5)
+        ema_slow = self.analyzer.ema(history, 14)
+        gap_val = self.analyzer.gap(history)
 
         if ema_fast is None or ema_slow is None or gap_val is None:
             return None
@@ -51,7 +49,6 @@ class VTRStrategy:
                 "signal": "buy",
                 "strength": float(abs(gap_val))
             }
-
         if ema_fast < ema_slow and gap_val < 0:
             return {
                 "symbol": symbol,

@@ -1,24 +1,10 @@
-import asyncio
-import websockets
-import json
+from telegram_bot import TelegramBot
+from config import APISettings
 
-RELAY = "ws://146.190.89.166:8765/relay"
+settings = APISettings()
+print(">>> TOKEN:", repr(settings.telegram_token))
+print(">>> CHAT_ID:", repr(settings.telegram_chat_id))
 
-async def main():
-    print("Connecting...")
-    ws = await websockets.connect(RELAY)
-    print("OPEN")
-
-    sub = {
-        "op": "subscribe",
-        "args": ["tickers.BTCUSDT"]
-    }
-
-    await ws.send(json.dumps(sub))
-    print("SUB SENT")
-
-    while True:
-        msg = await ws.recv()
-        print("MSG:", msg)
-
-asyncio.run(main())
+bot = TelegramBot(token=settings.telegram_token, chat_id=settings.telegram_chat_id)
+result = bot.send_message("Тест: Прямая проверка отправки 🚀")
+print(">>> SEND RESULT:", result)

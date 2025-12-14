@@ -22,6 +22,11 @@ from dotenv import load_dotenv
 env_path = Path(__file__).resolve().parent / ".env"
 if env_path.exists():
     load_dotenv(env_path)
+    print(">>> .env LOADED FROM:", env_path)
+else:
+    print(">>> .env NOT FOUND at:", env_path)
+print(">>> ENV CHECK: TELEGRAM_TOKEN =", repr(os.getenv('TELEGRAM_TOKEN')))
+print(">>> ENV CHECK: TELEGRAM_CHAT_ID =", repr(os.getenv('TELEGRAM_CHAT_ID')))
 
 
 # ============================================================

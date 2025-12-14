@@ -59,6 +59,7 @@ class TradingEngine:
             explanation = "History too short"
             return (None, explanation) if return_explanation else None
 
+
         # 3) Генерация сигнала
         sig = strategy.generate_signal(snapshot, symbol, history)
         if sig is None:
