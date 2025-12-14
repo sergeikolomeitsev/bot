@@ -1,110 +1,89 @@
 # ============================================================
-# AB TESTING ENGINE v9.0 — AI PRIME TRADING BOT
+# AB TESTING ENGINE v10.0 — AI PRIME TRADING BOT
 # ------------------------------------------------------------
-# Управляет A/B экспериментами:
-# - включает экспериментальные стратегии
-# - оценивает их результаты
-# - промоутит или откатывает стратегию
-# - НЕ содержит торговой логики
-# - НЕ вызывает TradingEngine
+# Инкапсулирует весь процесс A/B тестирования стратегий:
+# - Прокидывает market_data обеим стратегиям через AIStrategyManager
+# - Раз в час (08:00-22:00) формирует отчёты по pnl (реализованный/нереализованный)
+# - В 22:00 оценивает продвижение экспериментальной стратегии
+# - Вся история хранится в ab_history.json, сохранение "трэйдов" и портфелей — в json
+# - Не теряет данные при рестарте, всё всегда читается с диска и дописывается
 # ============================================================
 
-from typing import Optional, Dict, Any
+import json
+from datetime import datetime
+from ai_strategy_manager import AIStrategyManager
+from freedom_manager import FreedomManager
 
+REPORT_HOURS = list(range(8, 23))
+HISTORY_PATH = 'ab_history.json'
 
 class ABTestingEngine:
-    """
-    Управление A/B тестированием стратегий.
-    Состояние эксперимента:
-    - активен или нет
-    - метрики результата
-    """
+    def __init__(self, initial_balance=300):
+        self.freedom_manager = FreedomManager(config=None, ai_manager=None)
+        self.manager = AIStrategyManager(self.freedom_manager, initial_balance)
+        self.last_hour = None
+        self.last_report_date = None
+        self.load_history()
 
-    def __init__(self, config, ai_manager, freedom_manager):
-        self.cfg = config
-        self.ai_manager = ai_manager
-        self.freedom = freedom_manager
+    def load_history(self):
+        try:
+            with open(HISTORY_PATH, 'r') as f:
+                self.history = json.load(f)
+        except Exception:
+            self.history = []
 
-        self.active: bool = False
-        self.metrics: Dict[str, float] = {
-            "wins": 0.0,
-            "losses": 0.0,
-            "score": 0.0
+    def save_history(self):
+        with open(HISTORY_PATH, 'w') as f:
+            json.dump(self.history, f, indent=2, ensure_ascii=False)
+
+    def on_market_data(self, market_data):
+        self.manager.step(market_data)
+        now = datetime.now()
+        current_hour = now.hour
+
+        # Ежечасные отчеты с 8:00 по 22:00, не чаще чем раз в час
+        if current_hour in REPORT_HOURS and self.last_hour != current_hour:
+            self.make_hourly_report(now)
+            self.last_hour = current_hour
+
+        # Суточный отчет строго в 22:00, не срабатывает повторно за один день
+        if current_hour == 22 and (self.last_report_date != now.date()):
+            self.make_daily_report(now)
+            self.last_report_date = now.date()
+
+    def make_hourly_report(self, now):
+        baseline_pnl = self.manager.get_strategy_pnl('baseline')
+        experiment_pnl = self.manager.get_strategy_pnl('experimental')
+        data = {
+            'type': 'hourly',
+            'timestamp': now.isoformat(),
+            'baseline_realized_pnl': baseline_pnl['realized'],
+            'baseline_unrealized_pnl': baseline_pnl['unrealized'],
+            'experiment_realized_pnl': experiment_pnl['realized'],
+            'experiment_unrealized_pnl': experiment_pnl['unrealized'],
         }
+        self.history.append(data)
+        self.save_history()
 
-    # ------------------------------------------------------------
-    # PUBLIC — START EXPERIMENT
-    # ------------------------------------------------------------
-    def start_experiment(self, experimental_strategy) -> None:
-        """
-        Активирует экспериментальную стратегию.
-        """
-        self.ai_manager.set_experimental(experimental_strategy)
-        self.active = True
-        self.metrics = {"wins": 0.0, "losses": 0.0, "score": 0.0}
+    def make_daily_report(self, now):
+        baseline_pnl = self.manager.get_strategy_pnl('baseline')
+        experiment_pnl = self.manager.get_strategy_pnl('experimental')
+        promote = experiment_pnl['realized'] > baseline_pnl['realized']
+        data = {
+            'type': 'daily',
+            'date': now.date().isoformat(),
+            'baseline_realized_pnl': baseline_pnl['realized'],
+            'experiment_realized_pnl': experiment_pnl['realized'],
+            'promoted': promote,
+            'experiment_risk': self.manager.get_experiment_risk()
+        }
+        self.history.append(data)
+        self.save_history()
 
-    # ------------------------------------------------------------
-    # PUBLIC — RECORD OUTCOME
-    # ------------------------------------------------------------
-    # ------------------------------------------------------------
-    # PUBLIC — RECORD OUTCOME (SAFE v9.1)
-    # ------------------------------------------------------------
-    def record_result(self, profit: float) -> None:
-        """
-        Записывает результат эксперимента.
-        profit может быть None → такие случаи игнорируются.
-        """
-
-        # 1) Если прибыли нет — пропускаем
-        if profit is None:
-            # Можно добавить лог, если нужно:
-            # print("A/B: received None pnl → ignoring")
-            return
-
-        # 2) Классическая логика win/loss
-        if profit > 0:
-            self.metrics["wins"] += 1
+        if promote:
+            self.manager.promote_experiment()
         else:
-            self.metrics["losses"] += 1
+            self.manager.reset_experiment()
 
-        # 3) Score = wins - losses
-        self.metrics["score"] = self.metrics["wins"] - self.metrics["losses"]
-
-    # ------------------------------------------------------------
-    # PUBLIC — SHOULD PROMOTE?
-    # ------------------------------------------------------------
-    def should_promote(self) -> bool:
-        """
-        Решает, стоит ли продвигать стратегию:
-        - если score > threshold
-        """
-        threshold = 3  # в будущем вынесем в конфиг
-        return self.metrics["score"] >= threshold
-
-    # ------------------------------------------------------------
-    # PUBLIC — PROMOTE EXPERIMENT
-    # ------------------------------------------------------------
-    def promote(self) -> None:
-        """
-        Продвигает экспериментальную стратегию в основную.
-        """
-        if not self.active:
-            return
-
-        exp = self.ai_manager.experimental_strategy
-        if exp is None:
-            return
-
-        self.ai_manager.set_base_strategy(exp)
-        self.ai_manager.disable_experimental()
-        self.active = False
-
-    # ------------------------------------------------------------
-    # PUBLIC — ROLLBACK EXPERIMENT
-    # ------------------------------------------------------------
-    def rollback(self) -> None:
-        """
-        Откатывает экспериментальную стратегию.
-        """
-        self.ai_manager.disable_experimental()
-        self.active = False
+    def get_history(self):
+        return self.history

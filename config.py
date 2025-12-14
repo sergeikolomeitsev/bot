@@ -109,3 +109,5 @@ class Config:
         Только так твой новый WSPriceFeed будет работать корректно.
         """
         return self.ws.url_test if self.api.use_testnet else self.ws.url_main
+
+config = Config()

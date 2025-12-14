@@ -1,22 +1,2 @@
 {
-  "BTCUSDT": {
-    "qty": 0.0,
-    "avg": 0.0,
-    "realized": 0.0
-  },
-  "ETHUSDT": {
-    "qty": 0.09496105014259984,
-    "avg": 3159.19,
-    "realized": 0.0
-  },
-  "SOLUSDT": {
-    "qty": 0.0,
-    "avg": 0.0,
-    "realized": 0.0
-  },
-  "ADAUSDT": {
-    "qty": 0.0,
-    "avg": 0.0,
-    "realized": 0.0
-  }
-}
+  "balance": 

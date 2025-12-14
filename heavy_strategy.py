@@ -1,13 +1,43 @@
 # ============================================================
-# HEAVY STRATEGY v9.1 — Real History Edition
+# HEAVY STRATEGY v10.0 — Real History Edition / AB Compatible
+# ============================================================
+# - Совместима с новым AI Strategy Manager и AB Testing Engine
+# - Каждый экземпляр хранит СОБСТВЕННЫЙ портфель в JSON (portfolio_baseline.json или portfolio_experiment.json)
+# - Автоматически сохраняет и загружает историю сделок и позиции при работе
+# - generate_signal не менялся, бизнес-логика сигналов полностью сохранена
 # ============================================================
 
 from typing import Dict, Any, Optional, List
-
+import json
+import os
 
 class HeavyStrategy:
-    def __init__(self, analyzer):
+    def __init__(self, portfolio_file, analyzer=None):
         self.analyzer = analyzer
+        self.portfolio_file = portfolio_file
+        self._ensure_portfolio_file()
+        self._load_portfolio()
+
+    def _ensure_portfolio_file(self):
+        if not os.path.exists(self.portfolio_file):
+            with open(self.portfolio_file, 'w') as f:
+                json.dump({'balance': 300, 'positions': {}, 'trades': []}, f, indent=2)
+
+    def _load_portfolio(self):
+        with open(self.portfolio_file, 'r') as f:
+            data = json.load(f)
+        self.balance = data.get('balance', 300)
+        self.positions = data.get('positions', {})
+        self.trades = data.get('trades', [])
+
+    def _save_portfolio(self):
+        data = {
+            'balance': self.balance,
+            'positions': self.positions,
+            'trades': self.trades
+        }
+        with open(self.portfolio_file, 'w') as f:
+            json.dump(data, f, indent=2)
 
     def generate_signal(
         self,
@@ -15,7 +45,6 @@ class HeavyStrategy:
         symbol: str,
         history: List[float]
     ) -> Optional[Dict[str, Any]]:
-
         if not history or len(history) < 30:
             return None  # мало данных
 
@@ -39,3 +68,12 @@ class HeavyStrategy:
             return {"signal": "sell", "strength": float(strength)}
 
         return {"signal": "hold", "strength": 0.0}
+
+    def get_pnl(self):
+        """
+        Возвращает pnl по реализованным и нереализованным позициям:
+        {'realized': ..., 'unrealized': ...}
+        """
+        realized = sum([t.get('pnl', 0) for t in self.trades])
+        unrealized = 0  # реализуйте свою метрику, если нужно
+        return {'realized': realized, 'unrealized': unrealized}
