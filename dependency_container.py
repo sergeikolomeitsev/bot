@@ -115,14 +115,4 @@ class DependencyContainer:
         return self.trading_loop
 
     def build_heartbeat_summary(self):
-        """
-        Формирует подробный heartbeat:
-        - последний снапшот цен
-        - открытые позиции
-        - PnL по каждой позиции
-        - активная стратегия
-        - параметры принятия решений
-        """
-        md = self.market_data
-        engine = self.trading_engine
-        portfolio = self.portfolio
+        return self.heartbeat.build()

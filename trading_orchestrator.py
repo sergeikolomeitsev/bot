@@ -40,7 +40,7 @@ class TradingOrchestrator:
         try:
             hb = threading.Thread(target=self._heartbeat_loop, daemon=True)
             hb.start()
-            self.loop.run(symbols)  # <-- передаём список!
+            self.loop.run()  # <-- передаём список!
         except Exception as e:
             self.logger.error(f"CRITICAL ERROR in Orchestrator: {e}", exc_info=True)
             err = "".join(traceback.format_exception(type(e), e, e.__traceback__))

@@ -1,10 +1,11 @@
 # ============================================================
-# HEAVY STRATEGY v10.0 — Real History Edition / AB Compatible
+# HEAVY STRATEGY v10.3 — (on_market_data compat, no logic loss)
 # ============================================================
-# - Совместима с новым AI Strategy Manager и AB Testing Engine
-# - Каждый экземпляр хранит СОБСТВЕННЫЙ портфель в JSON (portfolio_baseline.json или portfolio_experiment.json)
+# - Совместима с AI Strategy Manager и AB Testing Engine
+# - Каждый экземпляр хранит СВОЙ портфель в JSON (portfolio_baseline.json или portfolio_experiment.json)
 # - Автоматически сохраняет и загружает историю сделок и позиции при работе
-# - generate_signal не менялся, бизнес-логика сигналов полностью сохранена
+# - generate_signal не менялся, бизнес-логика сохранена полностью
+# - Добавлен заглушечный on_market_data для совместимости с менеджером стратегий
 # ============================================================
 
 from typing import Dict, Any, Optional, List
@@ -75,5 +76,15 @@ class HeavyStrategy:
         {'realized': ..., 'unrealized': ...}
         """
         realized = sum([t.get('pnl', 0) for t in self.trades])
-        unrealized = 0  # реализуйте свою метрику, если нужно
+        unrealized = 0  # реализуйте свой расчет при необходимости
         return {'realized': realized, 'unrealized': unrealized}
+
+    # ==========================
+    # Для совместимости с AIStrategyManager (интерфейс-унификация)
+    # ==========================
+    def on_market_data(self, market_data):
+        """
+        Заглушка для совместимости. При необходимости реализуйте вашу логику.
+        Важно для корректной работы менеджера стратегий и AB тестирования.
+        """
+        pass

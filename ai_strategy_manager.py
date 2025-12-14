@@ -1,8 +1,8 @@
 # ============================================================
-# ai_strategy_manager.py — v10.1 (refactor: init via freedom_manager)
+# ai_strategy_manager.py — v10.2 (fix: get_active_strategy и experimental_active)
 # ------------------------------------------------------------
-# AI STRATEGY MANAGER v10.1 — AI PRIME TRADING BOT
-# Управляет двумя параллельными стратегиями с поддержкой FreedomManager
+# AI STRATEGY MANAGER v10.2 — AI PRIME TRADING BOT
+# Поддержка get_active_strategy и experimental_active для heartbeat
 # ============================================================
 
 import json
@@ -11,16 +11,16 @@ from vtr_strategy import VTRStrategy
 
 class AIStrategyManager:
     def __init__(self, freedom_manager, config, initial_balance=300):
-        # Интерфейс работы с портфелями по двум json-файлам
         self.baseline_file = 'portfolio_baseline.json'
         self.experiment_file = 'portfolio_experiment.json'
         self.freedom_manager = freedom_manager
         self.config = config
         self._init_portfolio_files(initial_balance)
         self.baseline_strategy = HeavyStrategy(self.baseline_file)
-        # Экспериментальная стратегия: risk берется из freedom_manager — всегда!
         risk = self.freedom_manager.apply_experimental_boost()
         self.experimental_strategy = VTRStrategy(self.experiment_file, risk=risk)
+
+        self._experimental_active = False  # По умолчанию
 
     def _init_portfolio_files(self, balance):
         for fname in [self.baseline_file, self.experiment_file]:
@@ -58,6 +58,24 @@ class AIStrategyManager:
             json.dump(exp_data, f, indent=2)
         with open(self.experiment_file, 'w') as f:
             json.dump({'balance': self.config.initial_balance, 'positions': {}, 'trades': []}, f, indent=2)
-        # обновить risk снова через freedom_manager
         risk = self.freedom_manager.apply_experimental_boost()
         self.experimental_strategy = VTRStrategy(self.experiment_file, risk=risk)
+
+    # ==========================
+    # Добавлено для heartbeat
+    # ==========================
+    def get_active_strategy(self):
+        """Возвращает текущую активную стратегию: экспериментальная или базовая."""
+        if self.experimental_active:
+            return self.experimental_strategy
+        else:
+            return self.baseline_strategy
+
+    @property
+    def experimental_active(self):
+        """Вернуть True если активен эксперимент (заглушка, при необходимости расширить)."""
+        return self._experimental_active
+
+    @experimental_active.setter
+    def experimental_active(self, val):
+        self._experimental_active = bool(val)
