@@ -86,48 +86,32 @@ class HeartbeatBuilder:
             hist = self.market.get_history(sym)
             if not hist or len(hist) < 20:
                 out.append(f"{sym}: insufficient history ({len(hist) if hist else 0})")
-                continue
-
-            price = snapshot.get(sym)
-            ema5 = self.analyzer.ema(hist, 5)
-            ema20 = self.analyzer.ema(hist, 20)
-            rsi = self.analyzer.rsi(hist, 14)
-            gap = self.analyzer.gap(hist)
-            vol = self.analyzer.volatility(hist)
-
-            out.append(
-                f"{sym}: {price} | EMA5 {ema5:.1f} | EMA20 {ema20:.1f} | "
-                f"RSI {rsi:.0f} | GAP {gap:+.2f} | VOL {vol:.2f}"
-            )
-
+            else:
+                out.append(f"{sym}: history ok ({len(hist)})")
         out.append("")
 
         # =====================================================
-        # SIGNALS
-        # =====================================================
-        out.append("=== SIGNALS ===")
+        # SIGNALS, HISTORY — опционально доработать
 
-        for sym in symbols:
-            hist = self.market.get_history(sym)
-            if not hist or len(hist) < 20:
-                continue
-
-            # получаем сигнал (без исполнения)
-            result = self.engine.process(snapshot, sym, history=hist, return_explanation=False)
-            if not result:
-                continue
-
-            signal = result.get("signal")
-            strength = float(result.get("strength", 0))
-            out.append(f"{sym} → {signal.upper()} ({strength:.2f})")
-
-        out.append("")
-
-        # =====================================================
-        # HISTORY LENGTH
-        # =====================================================
+        out.append("=== SIGNALS ===\n")
         out.append("=== HISTORY ===")
         for sym in symbols:
-            out.append(f"{sym} candles stored: {len(self.market.get_history(sym))}")
+            hist = self.market.get_history(sym)
+            out.append(f"{sym} candles stored: {len(hist) if hist else 0}")
 
         return "\n".join(out)
+
+    # ------------------------------------------------------------
+    # PUBLIC — SEND HEARTBEAT
+    # ------------------------------------------------------------
+    def send(self):
+        """
+        Отправка heartbeat через TelegramBot.
+        Метод ищет self.di.telegram_bot и вызывает send_heartbeat.
+        """
+        text = self.build()
+        bot = getattr(self.di, "telegram_bot", None)
+        if bot is not None and hasattr(bot, "send_heartbeat"):
+            return bot.send_heartbeat(text)
+        else:
+            raise RuntimeError("telegram_bot не настроен или не поддерживает send_heartbeat")

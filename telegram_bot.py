@@ -1,5 +1,5 @@
 # ============================================================
-# TELEGRAM BOT v9.0 — AI PRIME TRADING BOT
+# TELEGRAM BOT v9.1 — AI PRIME TRADING BOT (fix: send_alert)
 # ------------------------------------------------------------
 # Функции:
 # - отправка текстовых сообщений
@@ -17,7 +17,6 @@
 import logging
 import requests
 from pathlib import Path
-
 
 class TelegramBot:
     def __init__(self, token: str, chat_id: str):
@@ -100,5 +99,13 @@ class TelegramBot:
 
     def send_heartbeat(self, text: str):
         prefix = "❤️ HEARTBEAT v9.6\n"
-        return self.send_message(prefix + text)
+        return self.send_message(prefix + str(text))
 
+    # ------------------------------------------------------------
+    # FIX: ADD send_alert INTERFACE
+    # ------------------------------------------------------------
+    def send_alert(self, text: str):
+        """
+        Унифицированная точка для alert-нотификаций.
+        """
+        return self.send_message(text)
