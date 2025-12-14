@@ -1,13 +1,14 @@
 # ============================================================
-# ai_strategy_manager.py — v10.2 (fix: get_active_strategy и experimental_active)
+# ai_strategy_manager.py — v11.0 — Parallel AB test
 # ------------------------------------------------------------
-# AI STRATEGY MANAGER v10.2 — AI PRIME TRADING BOT
-# Поддержка get_active_strategy и experimental_active для heartbeat
+# Поддержка параллельной работы baseline и experimental стратегий
+# для live-сравнения в AB-режиме.
 # ============================================================
 
 import json
 from heavy_strategy import HeavyStrategy
 from vtr_strategy import VTRStrategy
+
 
 class AIStrategyManager:
     def __init__(self, freedom_manager, config, initial_balance=300):
@@ -20,8 +21,6 @@ class AIStrategyManager:
         risk = self.freedom_manager.apply_experimental_boost()
         self.experimental_strategy = VTRStrategy(self.experiment_file, risk=risk)
 
-        self._experimental_active = False  # По умолчанию
-
     def _init_portfolio_files(self, balance):
         for fname in [self.baseline_file, self.experiment_file]:
             try:
@@ -33,12 +32,69 @@ class AIStrategyManager:
                 with open(fname, 'w') as f:
                     json.dump({'balance': balance, 'positions': {}, 'trades': []}, f, indent=2)
 
-    def set_base_strategy(self, strategy):
-        self.baseline_strategy = strategy
+    # --- Новый главный параллельный step для обоих стратегий ---
+    def parallel_step(self, market_data, snapshot, symbol, history, freedom, return_decisions=False):
+        # baseline
+        base_sig = self.baseline_strategy.generate_signal(snapshot, symbol, history)
+        base_action = None
+        if base_sig is not None:
+            raw_str = float(base_sig.get("strength", 0.0))
+            base_strength = raw_str * freedom
+            base_signal = base_sig.get("signal")
+            pos = self.baseline_strategy.positions.get(symbol)
+            price = snapshot[symbol]
+            if base_signal == "long":
+                if not pos or pos.get("side") != "long":
+                    if pos:
+                        self.baseline_strategy.close_position(symbol, price)
+                    self.baseline_strategy.open_position(symbol, price, base_strength, "long")
+                    base_action = "open_long"
+                else:
+                    base_action = "hold_long"
+            elif base_signal == "short":
+                if not pos or pos.get("side") != "short":
+                    if pos:
+                        self.baseline_strategy.close_position(symbol, price)
+                    self.baseline_strategy.open_position(symbol, price, base_strength, "short")
+                    base_action = "open_short"
+                else:
+                    base_action = "hold_short"
+            elif base_signal == "hold":
+                base_action = "hold"
 
-    def step(self, market_data):
-        self.baseline_strategy.on_market_data(market_data)
-        self.experimental_strategy.on_market_data(market_data)
+        # experimental
+        exp_sig = self.experimental_strategy.generate_signal(snapshot, symbol, history)
+        exp_action = None
+        if exp_sig is not None:
+            raw_str = float(exp_sig.get("strength", 0.0))
+            exp_strength = raw_str * freedom
+            exp_signal = exp_sig.get("signal")
+            pos = self.experimental_strategy.positions.get(symbol)
+            price = snapshot[symbol]
+            if exp_signal == "long":
+                if not pos or pos.get("side") != "long":
+                    if pos:
+                        self.experimental_strategy.close_position(symbol, price)
+                    self.experimental_strategy.open_position(symbol, price, exp_strength, "long")
+                    exp_action = "open_long"
+                else:
+                    exp_action = "hold_long"
+            elif exp_signal == "short":
+                if not pos or pos.get("side") != "short":
+                    if pos:
+                        self.experimental_strategy.close_position(symbol, price)
+                    self.experimental_strategy.open_position(symbol, price, exp_strength, "short")
+                    exp_action = "open_short"
+                else:
+                    exp_action = "hold_short"
+            elif exp_signal == "hold":
+                exp_action = "hold"
+
+        if return_decisions:
+            return {
+                "baseline": {"signal": base_sig, "action": base_action},
+                "experimental": {"signal": exp_sig, "action": exp_action}
+            }
 
     def get_strategy_pnl(self, which):
         if which == 'baseline':
@@ -47,35 +103,3 @@ class AIStrategyManager:
             return self.experimental_strategy.get_pnl()
         else:
             return {'realized': 0, 'unrealized': 0}
-
-    def get_experiment_risk(self):
-        return getattr(self.experimental_strategy, 'risk', 1.0)
-
-    def promote_experiment(self):
-        with open(self.experiment_file, 'r') as f:
-            exp_data = json.load(f)
-        with open(self.baseline_file, 'w') as f:
-            json.dump(exp_data, f, indent=2)
-        with open(self.experiment_file, 'w') as f:
-            json.dump({'balance': self.config.initial_balance, 'positions': {}, 'trades': []}, f, indent=2)
-        risk = self.freedom_manager.apply_experimental_boost()
-        self.experimental_strategy = VTRStrategy(self.experiment_file, risk=risk)
-
-    # ==========================
-    # Добавлено для heartbeat
-    # ==========================
-    def get_active_strategy(self):
-        """Возвращает текущую активную стратегию: экспериментальная или базовая."""
-        if self.experimental_active:
-            return self.experimental_strategy
-        else:
-            return self.baseline_strategy
-
-    @property
-    def experimental_active(self):
-        """Вернуть True если активен эксперимент (заглушка, при необходимости расширить)."""
-        return self._experimental_active
-
-    @experimental_active.setter
-    def experimental_active(self, val):
-        self._experimental_active = bool(val)
