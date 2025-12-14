@@ -1,7 +1,7 @@
 # ============================================================
-# dependency_container.py — v9.1 (refactor: cyclic deps fix)
+# dependency_container.py — v9.3 (инициализация TradingLoop строго с 4 аргументами)
 # ------------------------------------------------------------
-# DI-контейнер: создание объектов модулей и правильная установка зависимостей для AI PRIME TRADING BOT
+# DI-контейнер: создание объектов модулей и установка зависимостей для AI PRIME TRADING BOT
 # ============================================================
 
 from config import Config
@@ -24,7 +24,7 @@ from heartbeat_builder import HeartbeatBuilder
 
 class DependencyContainer:
     """
-    DI-контейнер: создаёт все модули и связывает зависимости строго по контракту v9.1.
+    DI-контейнер: создаёт все модули и связывает зависимости строго по контракту v9.3.
     """
 
     def __init__(self):
@@ -49,21 +49,17 @@ class DependencyContainer:
         self.validator = ValidationService()
 
         # ------------------------------------------------------------
-        # STRATEGIES
+        # STRATEGIES (первым аргументом - путь к json-файлу портфеля)
         # ------------------------------------------------------------
-        self.vtr_strategy = VTRStrategy(self.analyzer)
-        self.heavy_strategy = HeavyStrategy(self.analyzer)
+        self.vtr_strategy = VTRStrategy("portfolio_experiment.json", analyzer=self.analyzer)
+        self.heavy_strategy = HeavyStrategy("portfolio_baseline.json", analyzer=self.analyzer)
 
         # ------------------------------------------------------------
         # CYCLIC DEPS: FREEDOM MANAGER <-> AI STRATEGY MANAGER
         # ------------------------------------------------------------
-        # ФАЗА 1 — создать FreedomManager с временным None вместо AIManager
         self.freedom_manager = FreedomManager(self.config, None)
-        # ФАЗА 2 — создать AIManager с freedom_manager
         self.ai_manager = AIStrategyManager(self.freedom_manager, self.config)
-        # ФАЗА 3 — сконнектить обратно AIManager в FreedomManager
         self.freedom_manager.set_ai_manager(self.ai_manager)
-        # NB: если надо, сюда же переносим вызов set_base_strategy
         self.ai_manager.set_base_strategy(self.vtr_strategy)
 
         # ------------------------------------------------------------
@@ -84,11 +80,7 @@ class DependencyContainer:
         # ------------------------------------------------------------
         # AB TESTING ENGINE
         # ------------------------------------------------------------
-        self.ab_engine = ABTestingEngine(
-            self.config,
-            self.ai_manager,
-            self.freedom_manager
-        )
+        self.ab_engine = ABTestingEngine()  # Только один аргумент или без аргументов
 
         # ------------------------------------------------------------
         # TRADING ENGINE
@@ -109,17 +101,15 @@ class DependencyContainer:
         self.reporting_engine = ReportingEngine(self.telegram_bot)
 
         # ------------------------------------------------------------
-        # TRADING LOOP
+        # TRADING LOOP (ТОЛЬКО 4 аргумента!)
         # ------------------------------------------------------------
+        self.heartbeat = HeartbeatBuilder(self)
         self.trading_loop = TradingLoop(
             self.config,
-            self.market_data,
-            self.trading_engine,
-            self.portfolio,
-            self.telegram_bot
+            self.ab_engine,
+            self.telegram_bot,
+            self.heartbeat
         )
-
-        self.heartbeat = HeartbeatBuilder(self)
 
     def get_loop(self):
         return self.trading_loop

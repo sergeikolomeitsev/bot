@@ -11,7 +11,7 @@ def wait_for_first_snapshot(di, timeout=10):
     print("⏳ Waiting for first WS snapshot...")
 
     start = time.time()
-    while time.time() - start < timeout:
+    while (time.time() - start < timeout):
         snap = di.ws_feed.get_prices()
         if snap:
             print(f"✅ First snapshot received: {snap}")
