@@ -1,12 +1,10 @@
 # ============================================================
-# PORTFOLIO SERVICE v9.1 — AI PRIME TRADING BOT with Realized PnL
+# PORTFOLIO SERVICE v9.2 — AI PRIME TRADING BOT with Short support
 # ------------------------------------------------------------
-# Управляет виртуальным портфелем:
-# - хранит позиции
-# - считает текущую стоимость
-# - считает PnL (unrealized и realized)
-# - не содержит торговых сигналов
-# - не ходит в сеть
+# Управляет виртуальным портфелем с учётом шортов:
+# - хранит позиции с направлением
+# - считает PnL (unrealized и realized), учитывая long/short
+# - поддерживает открытие и закрытие short и long
 # ============================================================
 
 from typing import Optional, Dict, Any
@@ -18,7 +16,8 @@ class PortfolioService:
     {
         "symbol": str,
         "entry_price": float,
-        "amount": float
+        "amount": float,
+        "side": "long" | "short"
     }
 
     Атрибуты:
@@ -31,13 +30,16 @@ class PortfolioService:
         self.realized_pnl: float = 0.0  # Добавлен счетчик реализованного профита
 
     # ------------------------------------------------------------
-    # PUBLIC — OPEN POSITION
+    # PUBLIC — OPEN POSITION (side = 'long' или 'short')
     # ------------------------------------------------------------
-    def open_position(self, symbol: str, price: float, amount: float) -> None:
+    def open_position(self, symbol: str, price: float, amount: float, side: str = "long") -> None:
+        """Открыть позицию (long или short)."""
+        assert side in ("long", "short")
         self.positions[symbol] = {
             "symbol": symbol,
             "entry_price": float(price),
-            "amount": float(amount)
+            "amount": float(amount),
+            "side": side
         }
 
     # ------------------------------------------------------------
@@ -49,11 +51,17 @@ class PortfolioService:
             return
         entry = pos["entry_price"]
         amount = pos["amount"]
+        side = pos.get("side", "long")
         # Если есть цена закрытия — учитываем реализованный профит
         if close_price is not None:
-            realized = (close_price - entry) * amount
+            # Для long: profit = (close - entry) * amount
+            # Для short: profit = (entry - close) * amount
+            if side == "long":
+                realized = (close_price - entry) * amount
+            else:
+                realized = (entry - close_price) * amount
             self.realized_pnl += realized
-            print(f"[PortfolioService] Реализованный PnL по {symbol}: {realized:.2f}. Всего: {self.realized_pnl:.2f}")
+            print(f"[PortfolioService] Реализованный PnL по {symbol} ({side}): {realized:.2f}. Всего: {self.realized_pnl:.2f}")
         del self.positions[symbol]
 
     # ------------------------------------------------------------
@@ -72,16 +80,28 @@ class PortfolioService:
 
         entry = pos["entry_price"]
         amount = pos["amount"]
+        side = pos.get("side", "long")
 
-        return float((current_price - entry) * amount)
+        if side == "long":
+            return float((current_price - entry) * amount)
+        else:
+            return float((entry - current_price) * amount)
 
     # ------------------------------------------------------------
     # PUBLIC — PORTFOLIO VALUE
     # ------------------------------------------------------------
     def portfolio_value(self, snapshot: Dict[str, Any]) -> float:
+        # Текущая стоимость по всем открытым позициям (long и short)
         total = 0.0
         for sym, pos in self.positions.items():
+            entry = pos["entry_price"]
+            amount = pos["amount"]
+            side = pos.get("side", "long")
             price = snapshot.get(sym)
-            if price is not None:
-                total += pos["amount"] * float(price)
-        return float(total)
+            if price is None:
+                continue
+            if side == "long":
+                total += (price - entry) * amount
+            else:
+                total += (entry - price) * amount
+        return total

@@ -58,15 +58,15 @@ class HeavyStrategy:
         if None in (ema_fast, ema_slow, rsi_val, gap_val, vol):
             return None
 
-        # BUY logic
+        # LONG logic
         if ema_fast > ema_slow and rsi_val < 65 and gap_val > 0:
             strength = (ema_fast - ema_slow) * 0.5 + max(0, 60 - rsi_val) * 0.2
-            return {"signal": "buy", "strength": float(strength)}
+            return {"signal": "long", "strength": float(strength)}
 
-        # SELL logic
+        # SHORT logic
         if ema_fast < ema_slow and rsi_val > 40 and gap_val < 0:
             strength = (ema_slow - ema_fast) * 0.5 + max(0, rsi_val - 40) * 0.2
-            return {"signal": "sell", "strength": float(strength)}
+            return {"signal": "short", "strength": float(strength)}
 
         return {"signal": "hold", "strength": 0.0}
 

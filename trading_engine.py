@@ -1,15 +1,14 @@
 # ============================================================
-# TRADING ENGINE v9.2 — Real-Market Indicators (FIXED)
+# TRADING ENGINE v9.3 — Real-Market Indicators + Short Support
 # ------------------------------------------------------------
 # ✔ Получает real-market history через DI
 # ✔ Передаёт history в стратегию
 # ✔ Корректно считает strength + freedom
 # ✔ PnL считается только при наличии позиции
-# ✔ Возвращает decision + optional explanation
+# ✔ Поддержка long и short: сигналы "long", "short", закрытие/открытие/удержание
 # ============================================================
 
 from typing import Dict, Any, Optional
-
 
 class TradingEngine:
     def __init__(
@@ -31,7 +30,7 @@ class TradingEngine:
         self.market_data = market_data  # DI injected MarketDataManager
 
     # ------------------------------------------------------------
-    # PROCESS ONE SYMBOL
+    # PROCESS ONE SYMBOL (с поддержкой шортов)
     # ------------------------------------------------------------
     def process(
         self,
@@ -59,20 +58,54 @@ class TradingEngine:
             explanation = "History too short"
             return (None, explanation) if return_explanation else None
 
-
         # 3) Генерация сигнала
         sig = strategy.generate_signal(snapshot, symbol, history)
         if sig is None:
             explanation = "Strategy returned None"
             return (None, explanation) if return_explanation else None
 
+        signal = sig.get("signal")
         raw_strength = float(sig.get("strength", 0.0))
         strength = raw_strength * self.freedom.get_multiplier()
 
-        # 4) PnL
         price = snapshot.get(symbol)
         pos = self.portfolio.get_position(symbol)
+        action = None
 
+        # 4) Обработка сигнала с поддержкой шорта
+        if signal == "long":
+            if not pos or pos.get("side") != "long":
+                if pos:
+                    # Закрываем противоположную позицию
+                    self.portfolio.close_position(symbol, price)
+                self.portfolio.open_position(symbol, price, amount=strength, side="long")
+                explanation = "Open LONG"
+                action = "open_long"
+            else:
+                explanation = "Already in LONG"
+                action = "hold_long"
+
+        elif signal == "short":
+            if not pos or pos.get("side") != "short":
+                if pos:
+                    # Закрываем противоположную позицию
+                    self.portfolio.close_position(symbol, price)
+                self.portfolio.open_position(symbol, price, amount=strength, side="short")
+                explanation = "Open SHORT"
+                action = "open_short"
+            else:
+                explanation = "Already in SHORT"
+                action = "hold_short"
+
+        elif signal == "hold":
+            explanation = "Hold"
+            action = "hold"
+
+        else:
+            explanation = f"Unknown signal: {signal}"
+            action = "error"
+
+        # 5) PnL
         pnl = None
         if pos and price is not None:
             try:
@@ -80,27 +113,12 @@ class TradingEngine:
             except Exception:
                 pnl = None
 
-        # 5) Decision object
+        # 6) Decision объект
         decision = {
             "symbol": symbol,
-            "signal": sig.get("signal", "hold"),
+            "signal": signal,
             "strength": strength,
-            "pnl": pnl
+            "pnl": pnl,
+            "action": action
         }
-
-        # 6) Classic mode
-        if not return_explanation:
-            return decision
-
-        # 7) Explanation mode
-        explanation = (
-            f"Strategy={strategy.__class__.__name__}, "
-            f"Signal={sig.get('signal')}, "
-            f"Strength(raw)={raw_strength}, "
-            f"Strength(adj)={strength}, "
-            f"Price={price}, "
-            f"PnL={pnl}, "
-            f"HistoryLen={len(history)}"
-        )
-
-        return decision, explanation
+        return (decision, explanation) if return_explanation else decision
