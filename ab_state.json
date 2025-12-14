@@ -1,0 +1,25 @@
+{
+  "week": 1,
+  "baseline": {
+    "name": "baseline",
+    "ema_fast": 12,
+    "ema_slow": 28,
+    "rsi_low": 35,
+    "rsi_high": 65,
+    "qty_factor": 1.0,
+    "gap_filter": false,
+    "version": 1
+  },
+  "experiment": {
+    "name": "experiment",
+    "ema_fast": 11,
+    "ema_slow": 28,
+    "rsi_low": 35,
+    "rsi_high": 65,
+    "qty_factor": 1.0,
+    "gap_filter": false,
+    "version": 2
+  },
+  "daily_results": [],
+  "weekly_results": []
+}

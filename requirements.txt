@@ -1,0 +1,40 @@
+# Зависимости для AI Trading Bot
+
+# Основные зависимости
+python-dotenv>=1.2.0
+requests>=2.31.0
+pandas>=2.0.0
+numpy>=1.24.0
+python-telegram-bot>=20.0
+
+# API клиенты
+pybit>=5.13.0
+
+# Технические индикаторы
+TA-Lib>=0.4.0
+
+# Дата и время
+python-dateutil>=2.8.2
+
+# Асинхронность
+aiohttp>=3.8.0
+
+# Логирование
+loguru>=0.7.0
+
+# Безопасность
+cryptography>=41.0.0
+
+# Утилиты
+psutil>=5.9.0
+
+# Технические индикаторы
+TA-Lib>=0.4.28
+
+scikit-learn>=1.2.0
+
+matplotlib>=3.7.0
+
+seaborn>=0.12.0
+
+plotly>=5.13.0

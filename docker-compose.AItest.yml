@@ -1,0 +1,19 @@
+services:
+  trading-bot:
+    build: .
+    container_name: ai_prime_v5
+    restart: always
+
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+
+    env_file:
+      - .env
+
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ENABLE_DEBUG_LOGS: ${ENABLE_DEBUG_LOGS:-false}
+
+    # bot doesn't expose ports, remove useless port mapping
+    ports: []
