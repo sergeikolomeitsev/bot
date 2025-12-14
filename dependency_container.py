@@ -60,8 +60,6 @@ class DependencyContainer:
         self.freedom_manager = FreedomManager(self.config, None)
         self.ai_manager = AIStrategyManager(self.freedom_manager, self.config)
         self.freedom_manager.set_ai_manager(self.ai_manager)
-        self.ai_manager.set_base_strategy(self.vtr_strategy)
-
         # ------------------------------------------------------------
         # WS FEED
         # ------------------------------------------------------------
@@ -80,8 +78,7 @@ class DependencyContainer:
         # ------------------------------------------------------------
         # AB TESTING ENGINE
         # ------------------------------------------------------------
-        self.ab_engine = ABTestingEngine()  # Только один аргумент или без аргументов
-
+        self.ab_engine = ABTestingEngine(self.config, initial_balance=300)
         # ------------------------------------------------------------
         # TRADING ENGINE
         # ------------------------------------------------------------
