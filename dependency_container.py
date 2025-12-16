@@ -100,7 +100,7 @@ class DependencyContainer:
         # ------------------------------------------------------------
         # TRADING LOOP (ТОЛЬКО 4 аргумента!)
         # ------------------------------------------------------------
-        self.heartbeat = HeartbeatBuilder(self, market_data=self.market_data)
+        self.heartbeat = HeartbeatBuilder(self, baseline_strategy = self.heavy_strategy,experimental_strategy = self.vtr_strategy)
         self.trading_loop = TradingLoop(
             self.config,
             self.ab_engine,

@@ -1,33 +1,28 @@
 # ============================================================
-# HEARTBEAT BUILDER v11.1 — Parallel AB test heartbeat
-# ------------------------------------------------------------
-# Новый heartbeat: Показывает baseline и experimental стратегии, их PnL, позиции, сигналы.
-# Полное live-сравнение для A/B теста.
+# HEARTBEAT BUILDER v11.2 — PnL для каждой позиции
 # ============================================================
 
-from typing import Dict, Any
+from typing import List
+
 
 class HeartbeatBuilder:
-
-    def __init__(self, di, market_data):
+    def __init__(self, di, baseline_strategy, experimental_strategy):
         self.di = di
-        self.market = market_data
-        self.ai = di.ai_manager
+        self.market = di.market_data
+        self.baseline_strategy = baseline_strategy
+        self.experimental_strategy = experimental_strategy
         self.cfg = di.config
 
-    def build(self) -> str:
-        symbols = self.cfg.trading.symbols
-        snapshot = self.market.get_snapshot()
-        print("[HEARTBEAT DEBUG] snapshot =", snapshot)
-
+    def build(self):
         out = []
-        out.append("❤️ HEARTBEAT v11.1 — PARALLEL AB TEST\n")
+        out.append("❤️ HEARTBEAT v11.2 — PARALLEL AB TEST\n")
 
         # === BASELINE STRATEGY ===
-        baseline = self.ai.baseline_strategy
+        baseline = self.baseline_strategy
         out.append("=== BASELINE STRATEGY ===")
         out.append(f"• Класс: {baseline.__class__.__name__}")
 
+        snapshot = self.market.get_snapshot()
         base_pnl = baseline.get_pnl(snapshot)
         out.append(f"• Realized: {base_pnl['realized']:.2f} | Unrealized: {base_pnl['unrealized']:.2f}")
         positions = getattr(baseline, "positions", {})
@@ -40,16 +35,22 @@ class HeartbeatBuilder:
                 pnl = None
                 if hasattr(baseline, "calc_pnl"):
                     try:
-                        pnl = baseline.calc_pnl(sym, price) if price else None
+                        if price is not None:
+                            pnl = baseline.calc_pnl(sym, price)
                     except Exception:
                         pnl = None
-                out.append(
-                    f"{sym} [{pos.get('side','long')}] → entry {pos['entry_price']} | now {price} | PnL {pnl if pnl is not None else 'n/a'}"
-                )
+                if pnl is not None:
+                    out.append(
+                        f"{sym} [{pos.get('side','long')}] → entry {pos['entry_price']} | now {price} | PnL {pnl:.2f}"
+                    )
+                else:
+                    out.append(
+                        f"{sym} [{pos.get('side','long')}] → entry {pos['entry_price']} | now {price}"
+                    )
         out.append("")
 
         # === EXPERIMENTAL STRATEGY ===
-        experimental = self.ai.experimental_strategy
+        experimental = self.experimental_strategy
         out.append("=== EXPERIMENTAL STRATEGY ===")
         out.append(f"• Класс: {experimental.__class__.__name__}")
 
@@ -65,15 +66,22 @@ class HeartbeatBuilder:
                 pnl = None
                 if hasattr(experimental, "calc_pnl"):
                     try:
-                        pnl = experimental.calc_pnl(sym, price) if price else None
+                        if price is not None:
+                            pnl = experimental.calc_pnl(sym, price)
                     except Exception:
                         pnl = None
-                out.append(
-                    f"{sym} [{pos.get('side','long')}] → entry {pos['entry_price']} | now {price} | PnL {pnl if pnl is not None else 'n/a'}"
-                )
+                if pnl is not None:
+                    out.append(
+                        f"{sym} [{pos.get('side','long')}] → entry {pos['entry_price']} | now {price} | PnL {pnl:.2f}"
+                    )
+                else:
+                    out.append(
+                        f"{sym} [{pos.get('side','long')}] → entry {pos['entry_price']} | now {price}"
+                    )
         out.append("")
 
         # === MARKET SNAPSHOT ===
+        symbols = list(self.market.history.keys())
         out.append("=== MARKET SNAPSHOT ===")
         for sym in symbols:
             hist = self.market.get_history(sym)

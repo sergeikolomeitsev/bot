@@ -1,35 +1,30 @@
 # ============================================================
-# HEAVY STRATEGY v10.4 — с open_position/close_position для AI Strategy Manager
-# ============================================================
-# - Совместима с AI Strategy Manager и AB Testing Engine
-# - Хранит портфель в JSON (portfolio_baseline.json или portfolio_experiment.json)
-# - Сохраняет историю сделок и позиций
-# - generate_signal не менялся, бизнес-логика сохранена полностью
-# - Добавлены open_position и close_position для совместимости с менеджером стратегий
+# HEAVY STRATEGY v10.4 — Пример стратегии с расчетом PnL по открытым позициям
 # ============================================================
 
-from typing import Dict, Any, Optional, List
 import json
-import os
+from typing import Dict, Any, List, Optional
 
 class HeavyStrategy:
     def __init__(self, portfolio_file, analyzer=None):
-        self.analyzer = analyzer
         self.portfolio_file = portfolio_file
-        self._ensure_portfolio_file()
+        self.analyzer = analyzer
+        self.positions = {}
+        self.trades = []
+        self.balance = 0.0
         self._load_portfolio()
 
-    def _ensure_portfolio_file(self):
-        if not os.path.exists(self.portfolio_file):
-            with open(self.portfolio_file, 'w') as f:
-                json.dump({'balance': 300, 'positions': {}, 'trades': []}, f, indent=2)
-
     def _load_portfolio(self):
-        with open(self.portfolio_file, 'r') as f:
-            data = json.load(f)
-        self.balance = data.get('balance', 300)
-        self.positions = data.get('positions', {})
-        self.trades = data.get('trades', [])
+        try:
+            with open(self.portfolio_file, 'r') as f:
+                data = json.load(f)
+                self.positions = data.get('positions', {})
+                self.trades = data.get('trades', [])
+                self.balance = data.get('balance', 0.0)
+        except Exception:
+            self.positions = {}
+            self.trades = []
+            self.balance = 0.0
 
     def _save_portfolio(self):
         data = {
@@ -81,6 +76,21 @@ class HeavyStrategy:
         del self.positions[symbol]
         self._save_portfolio()
 
+    def calc_pnl(self, symbol, price):
+        """
+        Calculate PnL for given open position and current price.
+        """
+        pos = self.positions.get(symbol)
+        if pos is None or price is None:
+            return None
+        entry = pos["entry_price"]
+        amount = pos["amount"]
+        side = pos.get("side", "long")
+        if side == "long":
+            return round((price - entry) * amount, 2)
+        else:
+            return round((entry - price) * amount, 2)
+
     def generate_signal(
         self,
         snapshot: Dict[str, Any],
@@ -112,6 +122,10 @@ class HeavyStrategy:
         return {"signal": "hold", "strength": 0.0}
 
     def get_pnl(self, snapshot=None):
+        """
+        Возвращает pnl по реализованным и нереализованным позициям:
+        {'realized': ..., 'unrealized': ...}
+        """
         realized = sum([t.get('pnl', 0) for t in self.trades])
         unrealized = 0
         if snapshot:
@@ -129,6 +143,6 @@ class HeavyStrategy:
 
     def on_market_data(self, market_data):
         """
-        Заглушка для совместимости. При необходимости реализуйте вашу логику.
+        (Пусто — вызывается в менеджере, если захочешь)
         """
         pass
