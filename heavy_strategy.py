@@ -1,11 +1,11 @@
 # ============================================================
-# HEAVY STRATEGY v10.3 — (on_market_data compat, no logic loss)
+# HEAVY STRATEGY v10.4 — с open_position/close_position для AI Strategy Manager
 # ============================================================
 # - Совместима с AI Strategy Manager и AB Testing Engine
-# - Каждый экземпляр хранит СВОЙ портфель в JSON (portfolio_baseline.json или portfolio_experiment.json)
-# - Автоматически сохраняет и загружает историю сделок и позиции при работе
+# - Хранит портфель в JSON (portfolio_baseline.json или portfolio_experiment.json)
+# - Сохраняет историю сделок и позиций
 # - generate_signal не менялся, бизнес-логика сохранена полностью
-# - Добавлен заглушечный on_market_data для совместимости с менеджером стратегий
+# - Добавлены open_position и close_position для совместимости с менеджером стратегий
 # ============================================================
 
 from typing import Dict, Any, Optional, List
@@ -39,6 +39,47 @@ class HeavyStrategy:
         }
         with open(self.portfolio_file, 'w') as f:
             json.dump(data, f, indent=2)
+
+    def open_position(self, symbol, price, amount, side="long"):
+        self.positions[symbol] = {
+            "symbol": symbol,
+            "entry_price": float(price),
+            "amount": float(amount),
+            "side": side
+        }
+        self.trades.append({
+            "symbol": symbol,
+            "entry_price": float(price),
+            "amount": float(amount),
+            "side": side,
+            "type": "open"
+        })
+        self._save_portfolio()
+
+    def close_position(self, symbol, close_price=None):
+        pos = self.positions.get(symbol)
+        if not pos:
+            return
+        entry = pos["entry_price"]
+        amount = pos["amount"]
+        side = pos.get("side", "long")
+        realized = 0
+        if close_price is not None:
+            if side == "long":
+                realized = (close_price - entry) * amount
+            else:
+                realized = (entry - close_price) * amount
+        self.trades.append({
+            "symbol": symbol,
+            "entry_price": entry,
+            "close_price": close_price,
+            "amount": amount,
+            "side": side,
+            "type": "close",
+            "pnl": realized
+        })
+        del self.positions[symbol]
+        self._save_portfolio()
 
     def generate_signal(
         self,
@@ -79,12 +120,8 @@ class HeavyStrategy:
         unrealized = 0  # реализуйте свой расчет при необходимости
         return {'realized': realized, 'unrealized': unrealized}
 
-    # ==========================
-    # Для совместимости с AIStrategyManager (интерфейс-унификация)
-    # ==========================
     def on_market_data(self, market_data):
         """
         Заглушка для совместимости. При необходимости реализуйте вашу логику.
-        Важно для корректной работы менеджера стратегий и AB тестирования.
         """
         pass

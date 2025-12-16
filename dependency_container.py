@@ -58,7 +58,7 @@ class DependencyContainer:
         # CYCLIC DEPS: FREEDOM MANAGER <-> AI STRATEGY MANAGER
         # ------------------------------------------------------------
         self.freedom_manager = FreedomManager(self.config, None)
-        self.ai_manager = AIStrategyManager(self.freedom_manager, self.config)
+        self.ai_manager = AIStrategyManager(self.freedom_manager, self.config, self.analyzer)
         self.freedom_manager.set_ai_manager(self.ai_manager)
         # ------------------------------------------------------------
         # WS FEED

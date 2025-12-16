@@ -1,8 +1,8 @@
 # ============================================================
-# ai_strategy_manager.py — v11.0 — Parallel AB test
+# ai_strategy_manager.py — v11.2 (DI-ready, analyzer injection)
 # ------------------------------------------------------------
-# Поддержка параллельной работы baseline и experimental стратегий
-# для live-сравнения в AB-режиме.
+# Полная поддержка ручного DI: baseline и experimental стратегии
+# получают analyzer автоматически при создании менеджера.
 # ============================================================
 
 import json
@@ -11,15 +11,21 @@ from vtr_strategy import VTRStrategy
 
 
 class AIStrategyManager:
-    def __init__(self, freedom_manager, config, initial_balance=300):
+    def __init__(self, freedom_manager, config, analyzer, initial_balance=300):
         self.baseline_file = 'portfolio_baseline.json'
         self.experiment_file = 'portfolio_experiment.json'
         self.freedom_manager = freedom_manager
         self.config = config
+        self.analyzer = analyzer  # Сохраняем analyzer для передачи стратегиям
         self._init_portfolio_files(initial_balance)
+
+        # Создание инициализированных стратегий с analyzer
         self.baseline_strategy = HeavyStrategy(self.baseline_file)
+        self.baseline_strategy.analyzer = self.analyzer
+
         risk = self.freedom_manager.apply_experimental_boost()
         self.experimental_strategy = VTRStrategy(self.experiment_file, risk=risk)
+        self.experimental_strategy.analyzer = self.analyzer
 
     def _init_portfolio_files(self, balance):
         for fname in [self.baseline_file, self.experiment_file]:
