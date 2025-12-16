@@ -27,7 +27,7 @@ class HeartbeatBuilder:
         out.append("=== BASELINE STRATEGY ===")
         out.append(f"• Класс: {baseline.__class__.__name__}")
 
-        base_pnl = baseline.get_pnl()
+        base_pnl = baseline.get_pnl(snapshot)
         out.append(f"• Realized: {base_pnl['realized']:.2f} | Unrealized: {base_pnl['unrealized']:.2f}")
         positions = getattr(baseline, "positions", {})
         if not positions:
@@ -52,7 +52,7 @@ class HeartbeatBuilder:
         out.append("=== EXPERIMENTAL STRATEGY ===")
         out.append(f"• Класс: {experimental.__class__.__name__}")
 
-        exp_pnl = experimental.get_pnl()
+        exp_pnl = experimental.get_pnl(snapshot)
         out.append(f"• Realized: {exp_pnl['realized']:.2f} | Unrealized: {exp_pnl['unrealized']:.2f}")
         positions = getattr(experimental, "positions", {})
         if not positions:

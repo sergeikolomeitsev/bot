@@ -111,13 +111,20 @@ class HeavyStrategy:
 
         return {"signal": "hold", "strength": 0.0}
 
-    def get_pnl(self):
-        """
-        Возвращает pnl по реализованным и нереализованным позициям:
-        {'realized': ..., 'unrealized': ...}
-        """
+    def get_pnl(self, snapshot=None):
         realized = sum([t.get('pnl', 0) for t in self.trades])
-        unrealized = 0  # реализуйте свой расчет при необходимости
+        unrealized = 0
+        if snapshot:
+            for sym, pos in self.positions.items():
+                price = snapshot.get(sym)
+                if price is not None:
+                    entry = pos["entry_price"]
+                    size = pos["amount"]
+                    side = pos.get("side", "long")
+                    if side == "long":
+                        unrealized += (price - entry) * size
+                    else:
+                        unrealized += (entry - price) * size
         return {'realized': realized, 'unrealized': unrealized}
 
     def on_market_data(self, market_data):

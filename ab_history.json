@@ -97,5 +97,22 @@
     "experiment_realized_pnl": -0.12259009200011675,
     "experiment_unrealized_pnl": 0,
     "promote": false
+  },
+  {
+    "type": "hourly",
+    "timestamp": "2025-12-16T22:45:36.903242",
+    "baseline_realized_pnl": 0,
+    "baseline_unrealized_pnl": 0,
+    "experiment_realized_pnl": -18.624249401999155,
+    "experiment_unrealized_pnl": 0
+  },
+  {
+    "type": "daily",
+    "timestamp": "2025-12-16T22:45:36.903242",
+    "baseline_realized_pnl": 0,
+    "baseline_unrealized_pnl": 0,
+    "experiment_realized_pnl": -18.624249401999155,
+    "experiment_unrealized_pnl": 0,
+    "promote": false
   }
 ]
