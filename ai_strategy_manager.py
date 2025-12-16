@@ -19,13 +19,11 @@ class AIStrategyManager:
         self.analyzer = analyzer  # Сохраняем analyzer для передачи стратегиям
         self._init_portfolio_files(initial_balance)
 
-        # Создание инициализированных стратегий с analyzer
-        self.baseline_strategy = HeavyStrategy(self.baseline_file)
-        self.baseline_strategy.analyzer = self.analyzer
+        # Исправленная инициализация стратегий с analyzer через конструктор
+        self.baseline_strategy = HeavyStrategy(self.baseline_file, analyzer=self.analyzer)
 
         risk = self.freedom_manager.apply_experimental_boost()
-        self.experimental_strategy = VTRStrategy(self.experiment_file, risk=risk)
-        self.experimental_strategy.analyzer = self.analyzer
+        self.experimental_strategy = VTRStrategy(self.experiment_file, risk=risk, analyzer=self.analyzer)
 
     def _init_portfolio_files(self, balance):
         for fname in [self.baseline_file, self.experiment_file]:
@@ -96,6 +94,7 @@ class AIStrategyManager:
             elif exp_signal == "hold":
                 exp_action = "hold"
 
+        # --- Блок возвращения решений ---
         if return_decisions:
             return {
                 "baseline": {"signal": base_sig, "action": base_action},
