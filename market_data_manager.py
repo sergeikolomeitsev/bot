@@ -37,6 +37,7 @@ class MarketDataManager:
         Обновляет snapshot + историю цен.
         """
         snapshot = self.ws.get_prices()
+
         if not snapshot:
             return None
 

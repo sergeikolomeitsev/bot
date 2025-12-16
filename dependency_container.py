@@ -100,12 +100,13 @@ class DependencyContainer:
         # ------------------------------------------------------------
         # TRADING LOOP (ТОЛЬКО 4 аргумента!)
         # ------------------------------------------------------------
-        self.heartbeat = HeartbeatBuilder(self)
+        self.heartbeat = HeartbeatBuilder(self, market_data=self.market_data)
         self.trading_loop = TradingLoop(
             self.config,
             self.ab_engine,
             self.telegram_bot,
-            self.heartbeat
+            self.heartbeat,
+            market_data=self.market_data
         )
 
     def get_loop(self):

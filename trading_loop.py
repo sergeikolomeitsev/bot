@@ -16,13 +16,18 @@ from market_data_manager import MarketDataManager  # АККУРАТНО доба
 logger = logging.getLogger("TradingLoop")
 
 class TradingLoop:
-    def __init__(self, config=config, ab_engine=None, telegram_bot=None, heartbeat=None):
+    def __init__(self,
+                 config=config,
+                 ab_engine=None,
+                 telegram_bot=None,
+                 heartbeat=None,
+                 market_data=None):
         self.config = config
         self.price_feed = WSPriceFeed(config)
         self.ab_engine = ab_engine if ab_engine is not None else ABTestingEngine(config, initial_balance=300)
         self.telegram_bot = telegram_bot
         self.heartbeat = heartbeat
-        self.market_data = MarketDataManager(config, self.price_feed)  # добавлено накопление истории
+        self.market_data = market_data
 
     def run(self):
         logger.info("== TRADING LOOP v11.1: STARTED — Parallel AB test ==")

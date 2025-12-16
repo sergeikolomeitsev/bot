@@ -61,7 +61,7 @@ class TradingSettings:
         )
         self.symbols = raw.replace(" ", "").split(",")
 
-    monitoring_interval_minutes: int = int(os.getenv("MONITOR_INTERVAL", "5"))
+    monitoring_interval_minutes: int = int(os.getenv("MONITOR_INTERVAL", "1"))
 
 
 # ============================================================

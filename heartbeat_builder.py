@@ -9,15 +9,16 @@ from typing import Dict, Any
 
 class HeartbeatBuilder:
 
-    def __init__(self, di):
+    def __init__(self, di, market_data):
         self.di = di
-        self.market = di.market_data
+        self.market = market_data
         self.ai = di.ai_manager
         self.cfg = di.config
 
     def build(self) -> str:
         symbols = self.cfg.trading.symbols
         snapshot = self.market.get_snapshot()
+        print("[HEARTBEAT DEBUG] snapshot =", snapshot)
 
         out = []
         out.append("❤️ HEARTBEAT v11.1 — PARALLEL AB TEST\n")
