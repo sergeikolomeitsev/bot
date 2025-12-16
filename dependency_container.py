@@ -58,6 +58,7 @@ class DependencyContainer:
         # CYCLIC DEPS: FREEDOM MANAGER <-> AI STRATEGY MANAGER
         # ------------------------------------------------------------
         self.freedom_manager = FreedomManager(self.config, None)
+        print("[DEBUG] DependencyContainer: self.analyzer before manager =", repr(self.analyzer), type(self.analyzer))
         self.ai_manager = AIStrategyManager(self.freedom_manager, self.config, self.analyzer)
         self.freedom_manager.set_ai_manager(self.ai_manager)
         # ------------------------------------------------------------
@@ -78,8 +79,7 @@ class DependencyContainer:
         # ------------------------------------------------------------
         # AB TESTING ENGINE
         # ------------------------------------------------------------
-        self.ab_engine = ABTestingEngine(self.config, initial_balance=300)
-        # ------------------------------------------------------------
+        self.ab_engine = ABTestingEngine(self.config, self.analyzer, initial_balance=300)        # ------------------------------------------------------------
         # TRADING ENGINE
         # ------------------------------------------------------------
         self.trading_engine = TradingEngine(

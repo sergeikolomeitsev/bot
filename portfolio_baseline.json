@@ -1,5 +1,33 @@
 {
   "balance": 300,
-  "positions": {},
-  "trades": []
+  "positions": {
+    "BTCUSDT": {
+      "symbol": "BTCUSDT",
+      "entry_price": 87304.8,
+      "amount": 7.235039978384396,
+      "side": "long"
+    },
+    "ETHUSDT": {
+      "symbol": "ETHUSDT",
+      "entry_price": 2928.6,
+      "amount": 0.8208663526842941,
+      "side": "long"
+    }
+  },
+  "trades": [
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 87304.8,
+      "amount": 7.235039978384396,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2928.6,
+      "amount": 0.8208663526842941,
+      "side": "long",
+      "type": "open"
+    }
+  ]
 }
