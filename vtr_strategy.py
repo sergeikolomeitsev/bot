@@ -98,7 +98,6 @@ class VTRStrategy:
         symbol: str,
         history: Optional[List[float]] = None
     ) -> Optional[Dict[str, Any]]:
-        print("[DEBUG] generate_signal: self.analyzer =", repr(self.analyzer), type(self.analyzer))
         price = snapshot.get(symbol)
         if price is None or history is None or len(history) < 20:
             return None
