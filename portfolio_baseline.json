@@ -1,46 +1,46 @@
 {
   "balance": 300,
   "positions": {
-    "BNBUSDT": {
-      "symbol": "BNBUSDT",
-      "entry_price": 868.2,
-      "amount": 2.028750035718417,
-      "side": "long"
-    },
     "DOGEUSDT": {
       "symbol": "DOGEUSDT",
-      "entry_price": 0.13206,
-      "amount": 1.1623257899079364e-06,
+      "entry_price": 0.12863,
+      "amount": 10.989918627712658,
       "side": "long"
-    },
-    "XRPUSDT": {
-      "symbol": "XRPUSDT",
-      "entry_price": 1.9353,
-      "amount": 1.230813578846769,
-      "side": "short"
     },
     "AVAXUSDT": {
       "symbol": "AVAXUSDT",
-      "entry_price": 12.36,
-      "amount": 2.0000145663438698,
+      "entry_price": 12.13,
+      "amount": 9.785898457452081,
+      "side": "long"
+    },
+    "BNBUSDT": {
+      "symbol": "BNBUSDT",
+      "entry_price": 842.9,
+      "amount": 4.0002503379096765,
       "side": "short"
     },
     "BTCUSDT": {
       "symbol": "BTCUSDT",
-      "entry_price": 87581.8,
-      "amount": 2.095609431996806,
+      "entry_price": 88342.7,
+      "amount": 3.00195438458005,
       "side": "short"
     },
     "SOLUSDT": {
       "symbol": "SOLUSDT",
-      "entry_price": 129.33,
-      "amount": 2.0007700118927545,
+      "entry_price": 125.97,
+      "amount": 0.5731669392049356,
       "side": "short"
     },
     "ETHUSDT": {
       "symbol": "ETHUSDT",
-      "entry_price": 2958.69,
-      "amount": 1.7104959087496114,
+      "entry_price": 2949.96,
+      "amount": 1.8162528782800735,
+      "side": "short"
+    },
+    "XRPUSDT": {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.9025,
+      "amount": 0.5714340036678219,
       "side": "long"
     }
   },
@@ -9499,6 +9499,934 @@
       "symbol": "ETHUSDT",
       "entry_price": 2958.69,
       "amount": 1.7104959087496114,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "entry_price": 0.13206,
+      "close_price": 0.12461,
+      "amount": 1.1623257899079364e-06,
+      "side": "long",
+      "type": "close",
+      "pnl": -8.659327134814141e-09
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "entry_price": 0.12461,
+      "amount": 8.000014715941283,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 87581.8,
+      "close_price": 87341.2,
+      "amount": 2.095609431996806,
+      "side": "short",
+      "type": "close",
+      "pnl": 504.2036293384437
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 87341.2,
+      "amount": 57.497864816046786,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.9353,
+      "close_price": 1.8747,
+      "amount": 1.230813578846769,
+      "side": "short",
+      "type": "close",
+      "pnl": 0.07458730287811417
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8747,
+      "amount": 4.002404673306383,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 129.33,
+      "close_price": 123.69,
+      "amount": 2.0007700118927545,
+      "side": "short",
+      "type": "close",
+      "pnl": 11.284342867075164
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 123.69,
+      "amount": 0.01971598874599323,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8747,
+      "close_price": 1.8764,
+      "amount": 4.002404673306383,
+      "side": "long",
+      "type": "close",
+      "pnl": 0.006804087944620991
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8764,
+      "amount": 0.33337362049882463,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "entry_price": 0.12461,
+      "close_price": 0.12611,
+      "amount": 8.000014715941283,
+      "side": "short",
+      "type": "close",
+      "pnl": -0.012000022073911936
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "entry_price": 0.12611,
+      "amount": 4.951758197507816e-07,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2958.69,
+      "close_price": 2857.0,
+      "amount": 1.7104959087496114,
+      "side": "long",
+      "type": "close",
+      "pnl": -173.94032896074808
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2857.0,
+      "amount": 2.1082276809065803,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2857.0,
+      "close_price": 2857.06,
+      "amount": 2.1082276809065803,
+      "side": "short",
+      "type": "close",
+      "pnl": -0.12649366085427977
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2857.06,
+      "amount": 1.3766275140669622,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8764,
+      "close_price": 1.8767,
+      "amount": 0.33337362049882463,
+      "side": "short",
+      "type": "close",
+      "pnl": -0.00010001208614963638
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8767,
+      "amount": 0.8889133340043872,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8767,
+      "close_price": 1.8765,
+      "amount": 0.8889133340043872,
+      "side": "long",
+      "type": "close",
+      "pnl": -0.00017778266680085786
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8765,
+      "amount": 2.000013558051003,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 123.69,
+      "close_price": 123.72,
+      "amount": 0.01971598874599323,
+      "side": "long",
+      "type": "close",
+      "pnl": 0.0005914796623798193
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 123.72,
+      "amount": 5.333603823468362,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2857.06,
+      "close_price": 2856.21,
+      "amount": 1.3766275140669622,
+      "side": "long",
+      "type": "close",
+      "pnl": -1.1701333869567927
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2856.21,
+      "amount": 0.49476519915459394,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 123.72,
+      "close_price": 123.74,
+      "amount": 5.333603823468362,
+      "side": "short",
+      "type": "close",
+      "pnl": -0.10667207646934602
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 123.74,
+      "amount": 0.0024036864179990403,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8765,
+      "close_price": 1.877,
+      "amount": 2.000013558051003,
+      "side": "short",
+      "type": "close",
+      "pnl": -0.0010000067790253912
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.877,
+      "amount": 2.0000062834747414,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2856.21,
+      "close_price": 2856.42,
+      "amount": 0.49476519915459394,
+      "side": "short",
+      "type": "close",
+      "pnl": -0.10390069182248272
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2856.42,
+      "amount": 2.00405545276908,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2856.42,
+      "close_price": 2857.12,
+      "amount": 2.00405545276908,
+      "side": "long",
+      "type": "close",
+      "pnl": 1.4028388169379915
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2857.12,
+      "amount": 11.24337541386905,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 87341.2,
+      "close_price": 87375.7,
+      "amount": 57.497864816046786,
+      "side": "long",
+      "type": "close",
+      "pnl": 1983.676336153614
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 87375.7,
+      "amount": 11.900800415027739,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 123.74,
+      "close_price": 123.71,
+      "amount": 0.0024036864179990403,
+      "side": "long",
+      "type": "close",
+      "pnl": -7.211059253997394e-05
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 123.71,
+      "amount": 2.003702326729112,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.877,
+      "close_price": 1.8788,
+      "amount": 2.0000062834747414,
+      "side": "long",
+      "type": "close",
+      "pnl": 0.003600011310254582
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8788,
+      "amount": 3.666675665079226,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8788,
+      "close_price": 1.8791,
+      "amount": 3.666675665079226,
+      "side": "short",
+      "type": "close",
+      "pnl": -0.0011000026995236466
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8791,
+      "amount": 3.7121971085629646e-05,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "entry_price": 0.12611,
+      "close_price": 0.12605,
+      "amount": 4.951758197507816e-07,
+      "side": "long",
+      "type": "close",
+      "pnl": -2.9710549185049124e-11
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "entry_price": 0.12605,
+      "amount": 2.0000002826582093,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2857.12,
+      "close_price": 2857.27,
+      "amount": 11.24337541386905,
+      "side": "short",
+      "type": "close",
+      "pnl": -1.68650631208138
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2857.27,
+      "amount": 2.053060854868818,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 87375.7,
+      "close_price": 87372.0,
+      "amount": 11.900800415027739,
+      "side": "short",
+      "type": "close",
+      "pnl": 44.032961535568
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 87372.0,
+      "amount": 2.12532884257962,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8791,
+      "close_price": 1.8774,
+      "amount": 3.7121971085629646e-05,
+      "side": "long",
+      "type": "close",
+      "pnl": -6.310735084557169e-08
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8774,
+      "amount": 2.0000954180645554,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 87372.0,
+      "close_price": 87378.0,
+      "amount": 2.12532884257962,
+      "side": "long",
+      "type": "close",
+      "pnl": 12.75197305547772
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 87378.0,
+      "amount": 4.156888717967377,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2857.27,
+      "close_price": 2858.49,
+      "amount": 2.053060854868818,
+      "side": "long",
+      "type": "close",
+      "pnl": 2.504734242939547
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2858.49,
+      "amount": 1.2719751777544304,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 87378.0,
+      "close_price": 88396.1,
+      "amount": 4.156888717967377,
+      "side": "short",
+      "type": "close",
+      "pnl": -4232.12840376261
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88396.1,
+      "amount": 46.43201527529767,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2858.49,
+      "close_price": 2951.78,
+      "amount": 1.2719751777544304,
+      "side": "short",
+      "type": "close",
+      "pnl": -118.66256433271134
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2951.78,
+      "amount": 14.057358598609966,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 123.71,
+      "close_price": 125.9,
+      "amount": 2.003702326729112,
+      "side": "short",
+      "type": "close",
+      "pnl": -4.388108095536779
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 125.9,
+      "amount": 10.794138640337904,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "entry_price": 0.12605,
+      "close_price": 0.12863,
+      "amount": 2.0000002826582093,
+      "side": "short",
+      "type": "close",
+      "pnl": -0.005160000729258178
+    },
+    {
+      "symbol": "DOGEUSDT",
+      "entry_price": 0.12863,
+      "amount": 10.989918627712658,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "AVAXUSDT",
+      "entry_price": 12.36,
+      "close_price": 12.13,
+      "amount": 2.0000145663438698,
+      "side": "short",
+      "type": "close",
+      "pnl": 0.46000335025908734
+    },
+    {
+      "symbol": "AVAXUSDT",
+      "entry_price": 12.13,
+      "amount": 9.785898457452081,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88396.1,
+      "close_price": 88438.1,
+      "amount": 46.43201527529767,
+      "side": "long",
+      "type": "close",
+      "pnl": 1950.1446415625023
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88438.1,
+      "amount": 3.778354011808959,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2951.78,
+      "close_price": 2952.69,
+      "amount": 14.057358598609966,
+      "side": "long",
+      "type": "close",
+      "pnl": 12.792196324733023
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2952.69,
+      "amount": 0.6721605353824629,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2952.69,
+      "close_price": 2953.97,
+      "amount": 0.6721605353824629,
+      "side": "short",
+      "type": "close",
+      "pnl": -0.8603654852893814
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2953.97,
+      "amount": 3.3317584795093467,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 125.9,
+      "close_price": 126.02,
+      "amount": 10.794138640337904,
+      "side": "long",
+      "type": "close",
+      "pnl": 1.2952966368404442
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 126.02,
+      "amount": 0.7500969483465681,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2953.97,
+      "close_price": 2952.87,
+      "amount": 3.3317584795093467,
+      "side": "long",
+      "type": "close",
+      "pnl": -3.6649343274599784
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2952.87,
+      "amount": 0.6533116443638519,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2952.87,
+      "close_price": 2953.76,
+      "amount": 0.6533116443638519,
+      "side": "short",
+      "type": "close",
+      "pnl": -0.5814473634840421
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2953.76,
+      "amount": 1.074134094122779,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2953.76,
+      "close_price": 2952.11,
+      "amount": 1.074134094122779,
+      "side": "long",
+      "type": "close",
+      "pnl": -1.772321255302683
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2952.11,
+      "amount": 0.056970707805052714,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "BNBUSDT",
+      "entry_price": 868.2,
+      "close_price": 842.9,
+      "amount": 2.028750035718417,
+      "side": "long",
+      "type": "close",
+      "pnl": -51.32737590367609
+    },
+    {
+      "symbol": "BNBUSDT",
+      "entry_price": 842.9,
+      "amount": 4.0002503379096765,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2952.11,
+      "close_price": 2953.43,
+      "amount": 0.056970707805052714,
+      "side": "short",
+      "type": "close",
+      "pnl": -0.07520133430265301
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2953.43,
+      "amount": 0.11125232912695537,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.8774,
+      "close_price": 1.9032,
+      "amount": 2.0000954180645554,
+      "side": "short",
+      "type": "close",
+      "pnl": -0.05160246178606562
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.9032,
+      "amount": 2.3494655998490543e-06,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88438.1,
+      "close_price": 88364.6,
+      "amount": 3.778354011808959,
+      "side": "short",
+      "type": "close",
+      "pnl": 277.7090198679585
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88364.6,
+      "amount": 3.610346399475972,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.9032,
+      "close_price": 1.9022,
+      "amount": 2.3494655998490543e-06,
+      "side": "long",
+      "type": "close",
+      "pnl": -2.3494655998493175e-09
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.9022,
+      "amount": 0.8235573967036522,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 126.02,
+      "close_price": 125.98,
+      "amount": 0.7500969483465681,
+      "side": "short",
+      "type": "close",
+      "pnl": 0.030003877933856758
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 125.98,
+      "amount": 0.3417228790296747,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88364.6,
+      "close_price": 88334.7,
+      "amount": 3.610346399475972,
+      "side": "long",
+      "type": "close",
+      "pnl": -107.9493573443631
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88334.7,
+      "amount": 4.813136596108795,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2953.43,
+      "close_price": 2951.93,
+      "amount": 0.11125232912695537,
+      "side": "long",
+      "type": "close",
+      "pnl": -0.16687849369043306
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2951.93,
+      "amount": 3.1765283606251944,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88334.7,
+      "close_price": 88349.0,
+      "amount": 4.813136596108795,
+      "side": "short",
+      "type": "close",
+      "pnl": -68.82785332436978
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88349.0,
+      "amount": 3.0101368426501227,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2951.93,
+      "close_price": 2952.66,
+      "amount": 3.1765283606251944,
+      "side": "short",
+      "type": "close",
+      "pnl": -2.3188657032564497
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2952.66,
+      "amount": 3.6546952304006783,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.9022,
+      "close_price": 1.903,
+      "amount": 0.8235573967036522,
+      "side": "short",
+      "type": "close",
+      "pnl": -0.0006588459173630321
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.903,
+      "amount": 0.23535635038644276,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88349.0,
+      "close_price": 88335.9,
+      "amount": 3.0101368426501227,
+      "side": "long",
+      "type": "close",
+      "pnl": -39.43279263873413
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88335.9,
+      "amount": 2.3054201545538247,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2952.66,
+      "close_price": 2952.12,
+      "amount": 3.6546952304006783,
+      "side": "long",
+      "type": "close",
+      "pnl": -1.9735354244162333
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2952.12,
+      "amount": 3.241306409309037,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2952.12,
+      "close_price": 2952.7,
+      "amount": 3.241306409309037,
+      "side": "short",
+      "type": "close",
+      "pnl": -1.8799577173990056
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2952.7,
+      "amount": 0.3002044047484773,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88335.9,
+      "close_price": 88365.8,
+      "amount": 2.3054201545538247,
+      "side": "short",
+      "type": "close",
+      "pnl": -68.93206262117948
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88365.8,
+      "amount": 0.7192644328897586,
+      "side": "long",
+      "type": "open"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88365.8,
+      "close_price": 88342.7,
+      "amount": 0.7192644328897586,
+      "side": "long",
+      "type": "close",
+      "pnl": -16.61500839975761
+    },
+    {
+      "symbol": "BTCUSDT",
+      "entry_price": 88342.7,
+      "amount": 3.00195438458005,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 125.98,
+      "close_price": 125.97,
+      "amount": 0.3417228790296747,
+      "side": "long",
+      "type": "close",
+      "pnl": -0.003417228790298495
+    },
+    {
+      "symbol": "SOLUSDT",
+      "entry_price": 125.97,
+      "amount": 0.5731669392049356,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.903,
+      "close_price": 1.9029,
+      "amount": 0.23535635038644276,
+      "side": "long",
+      "type": "close",
+      "pnl": -2.3535635038641685e-05
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.9029,
+      "amount": 3.1111225055329776,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2952.7,
+      "close_price": 2949.96,
+      "amount": 0.3002044047484773,
+      "side": "long",
+      "type": "close",
+      "pnl": -0.8225600690107623
+    },
+    {
+      "symbol": "ETHUSDT",
+      "entry_price": 2949.96,
+      "amount": 1.8162528782800735,
+      "side": "short",
+      "type": "open"
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.9029,
+      "close_price": 1.9025,
+      "amount": 3.1111225055329776,
+      "side": "short",
+      "type": "close",
+      "pnl": 0.001244449002213054
+    },
+    {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.9025,
+      "amount": 0.5714340036678219,
       "side": "long",
       "type": "open"
     }

@@ -195,5 +195,77 @@
     "experiment_realized_pnl": 38594.66198621541,
     "experiment_unrealized_pnl": 0,
     "promote": true
+  },
+  {
+    "type": "hourly",
+    "timestamp": "2025-12-18T08:00:24.834005",
+    "baseline_realized_pnl": 9308.112213454833,
+    "baseline_unrealized_pnl": 0,
+    "experiment_realized_pnl": 38594.66198621541,
+    "experiment_unrealized_pnl": 0
+  },
+  {
+    "type": "hourly",
+    "timestamp": "2025-12-18T10:33:26.491613",
+    "baseline_realized_pnl": 9308.112213454833,
+    "baseline_unrealized_pnl": 0,
+    "experiment_realized_pnl": 38594.66198621541,
+    "experiment_unrealized_pnl": 0
+  },
+  {
+    "type": "hourly",
+    "timestamp": "2025-12-18T11:42:29.028167",
+    "baseline_realized_pnl": 9308.112213454833,
+    "baseline_unrealized_pnl": 0,
+    "experiment_realized_pnl": 38594.66198621541,
+    "experiment_unrealized_pnl": 0
+  },
+  {
+    "type": "hourly",
+    "timestamp": "2025-12-18T12:00:00.192314",
+    "baseline_realized_pnl": 9308.112213454833,
+    "baseline_unrealized_pnl": 0,
+    "experiment_realized_pnl": 38594.66198621541,
+    "experiment_unrealized_pnl": 0
+  },
+  {
+    "type": "hourly",
+    "timestamp": "2025-12-18T14:11:34.688760",
+    "baseline_realized_pnl": 9308.112213446173,
+    "baseline_unrealized_pnl": 0,
+    "experiment_realized_pnl": 50202.95382935121,
+    "experiment_unrealized_pnl": 0
+  },
+  {
+    "type": "hourly",
+    "timestamp": "2025-12-18T15:20:45.494480",
+    "baseline_realized_pnl": 9308.112213446173,
+    "baseline_unrealized_pnl": 0,
+    "experiment_realized_pnl": 50202.94117935121,
+    "experiment_unrealized_pnl": 0
+  },
+  {
+    "type": "hourly",
+    "timestamp": "2025-12-18T17:53:48.910366",
+    "baseline_realized_pnl": 11690.906127249058,
+    "baseline_unrealized_pnl": 0,
+    "experiment_realized_pnl": 51650.669753091206,
+    "experiment_unrealized_pnl": 0
+  },
+  {
+    "type": "hourly",
+    "timestamp": "2025-12-18T18:15:23.131547",
+    "baseline_realized_pnl": 11690.906127249058,
+    "baseline_unrealized_pnl": 0,
+    "experiment_realized_pnl": 44667.69955027637,
+    "experiment_unrealized_pnl": 0
+  },
+  {
+    "type": "hourly",
+    "timestamp": "2025-12-18T19:29:09.420491",
+    "baseline_realized_pnl": 11690.906127249058,
+    "baseline_unrealized_pnl": 0,
+    "experiment_realized_pnl": 44667.69955027637,
+    "experiment_unrealized_pnl": 0
   }
 ]

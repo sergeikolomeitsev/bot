@@ -91,12 +91,6 @@ class HeartbeatBuilder:
                 out.append(f"{sym}: history ok ({len(hist)})")
         out.append("")
 
-        # === HISTORY (по обеим стратегиям)
-        out.append("=== HISTORY ===")
-        for sym in symbols:
-            hist = self.market.get_history(sym)
-            out.append(f"{sym} candles stored: {len(hist) if hist else 0}")
-
         return "\n".join(out)
 
     def send(self):
