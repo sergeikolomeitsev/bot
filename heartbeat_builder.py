@@ -101,3 +101,11 @@ class HeartbeatBuilder:
         out.append("")
 
         return "\n".join(out)
+
+    def send(self):
+        text = self.build()
+        bot = getattr(self.di, "telegram_bot", None)
+        if bot is not None and hasattr(bot, "send_heartbeat"):
+            return bot.send_heartbeat(text)
+        else:
+            raise RuntimeError("telegram_bot не настроен или не поддерживает send_heartbeat")

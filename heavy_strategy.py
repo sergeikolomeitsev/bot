@@ -1,95 +1,60 @@
 # ============================================================
-# HEAVY STRATEGY v10.4 — Пример стратегии с расчетом PnL по открытым позициям
+# HEAVY STRATEGY v10.6 — ФИЛЬТРЫ: strength, min_hold, N-confirm
 # ============================================================
 
-import json
 from typing import Dict, Any, List, Optional
 
 class HeavyStrategy:
-    def __init__(self, portfolio_file, analyzer=None):
-        self.portfolio_file = portfolio_file
+    MIN_SIGNAL_STRENGTH = 0.15    # порог силы сигнала
+    MIN_HOLD_BARS = 3             # минимум баров держим позицию
+    N_CONFIRM = 2                 # число одинаковых сигналов подряд для подтверждения
+
+    def __init__(self, portfolio, analyzer=None):
+        self.portfolio = portfolio
         self.analyzer = analyzer
-        self.positions = {}
-        self.trades = []
-        self.balance = 0.0
-        self._load_portfolio()
+        self.bar_count = 0
+        self.position_opened_at = {}       # symbol -> bar_opened
+        self.last_signals = {}             # symbol -> [signal1, signal2, ...] (FIFO)
 
-    def _load_portfolio(self):
-        try:
-            with open(self.portfolio_file, 'r') as f:
-                data = json.load(f)
-                self.positions = data.get('positions', {})
-                self.trades = data.get('trades', [])
-                self.balance = data.get('balance', 0.0)
-        except Exception:
-            self.positions = {}
-            self.trades = []
-            self.balance = 0.0
+    @property
+    def positions(self):
+        return self.portfolio.positions
 
-    def _save_portfolio(self):
-        data = {
-            'balance': self.balance,
-            'positions': self.positions,
-            'trades': self.trades
-        }
-        with open(self.portfolio_file, 'w') as f:
-            json.dump(data, f, indent=2)
+    @property
+    def trades(self):
+        return self.portfolio.trades
+
+    def on_bar(self):
+        """Вызывать это при каждом новом баре/time step (инкрементируем счетчик баров)."""
+        self.bar_count += 1
 
     def open_position(self, symbol, price, amount, side="long"):
-        self.positions[symbol] = {
-            "symbol": symbol,
-            "entry_price": float(price),
-            "amount": float(amount),
-            "side": side
-        }
-        self.trades.append({
-            "symbol": symbol,
-            "entry_price": float(price),
-            "amount": float(amount),
-            "side": side,
-            "type": "open"
-        })
-        self._save_portfolio()
+        self.portfolio.open_position(symbol, price, amount, side)
+        self.position_opened_at[symbol] = self.bar_count
 
     def close_position(self, symbol, close_price=None):
-        pos = self.positions.get(symbol)
-        if not pos:
+        if not self.can_close_position(symbol):
+            print(f"[HeavyStrategy] Позу {symbol} нельзя закрыть — не выдержан min_hold!")
             return
-        entry = pos["entry_price"]
-        amount = pos["amount"]
-        side = pos.get("side", "long")
-        realized = 0
-        if close_price is not None:
-            if side == "long":
-                realized = (close_price - entry) * amount
-            else:
-                realized = (entry - close_price) * amount
-        self.trades.append({
-            "symbol": symbol,
-            "entry_price": entry,
-            "close_price": close_price,
-            "amount": amount,
-            "side": side,
-            "type": "close",
-            "pnl": realized
-        })
-        del self.positions[symbol]
-        self._save_portfolio()
+        self.portfolio.close_position(symbol, close_price)
+        self.position_opened_at.pop(symbol, None)
+
+    def can_close_position(self, symbol):
+        opened_at = self.position_opened_at.get(symbol)
+        if opened_at is None:
+            return True
+        return (self.bar_count - opened_at) >= self.MIN_HOLD_BARS
 
     def calc_pnl(self, symbol, price):
-        """
-        Calculate PnL for given open position and current price.
-        """
-        pos = self.positions.get(symbol)
-        if pos is None or price is None:
-            return None
-        entry = pos["entry_price"]
-        amount = pos["amount"]
-        side = pos.get("side", "long")
-        if side == "long":
-            return round((price - entry) * amount, 2)
-        else:
-            return round((entry - price) * amount, 2)
+        return self.portfolio.calc_pnl(symbol, price)
+
+    def update_signal_buffer(self, symbol, current_signal):
+        buf = self.last_signals.setdefault(symbol, [])
+        buf.append(current_signal)
+        if len(buf) > self.N_CONFIRM:
+            buf.pop(0)
+        # возвращает истину, если последние N_CONFIRM сигналов одинаковы и не hold
+        return len(buf) == self.N_CONFIRM and len(set(buf)) == 1 and buf[-1] != "hold"
 
     def generate_signal(
         self,
@@ -97,8 +62,8 @@ class HeavyStrategy:
         symbol: str,
         history: List[float]
     ) -> Optional[Dict[str, Any]]:
-        if not history or len(history) < 30:
-            return None  # мало данных
+        if history is None or len(history) < 30 or self.analyzer is None:
+            return None
 
         ema_fast = self.analyzer.ema(history, 5)
         ema_slow = self.analyzer.ema(history, 20)
@@ -109,23 +74,29 @@ class HeavyStrategy:
         if None in (ema_fast, ema_slow, rsi_val, gap_val, vol):
             return None
 
+        signal = "hold"
+        strength = 0.0
+
         # LONG logic
         if ema_fast > ema_slow and rsi_val < 65 and gap_val > 0:
             strength = (ema_fast - ema_slow) * 0.5 + max(0, 60 - rsi_val) * 0.2
-            return {"signal": "long", "strength": float(strength)}
-
+            if strength >= self.MIN_SIGNAL_STRENGTH:
+                signal = "long"
         # SHORT logic
-        if ema_fast < ema_slow and rsi_val > 40 and gap_val < 0:
+        elif ema_fast < ema_slow and rsi_val > 40 and gap_val < 0:
             strength = (ema_slow - ema_fast) * 0.5 + max(0, rsi_val - 40) * 0.2
-            return {"signal": "short", "strength": float(strength)}
+            if strength >= self.MIN_SIGNAL_STRENGTH:
+                signal = "short"
 
-        return {"signal": "hold", "strength": 0.0}
+        # --- Фильтрация по N_CONFIRM ---
+        confirmed = self.update_signal_buffer(symbol, signal)
+        if not confirmed:
+            # Требуем подтверждения N_CONFIRM раз подряд
+            return {"signal": "hold", "strength": 0.0}
+
+        return {"signal": signal, "strength": strength}
 
     def get_pnl(self, snapshot=None):
-        """
-        Возвращает pnl по реализованным и нереализованным позициям:
-        {'realized': ..., 'unrealized': ...}
-        """
         realized = sum([t.get('pnl', 0) for t in self.trades])
         unrealized = 0
         if snapshot:
@@ -142,7 +113,4 @@ class HeavyStrategy:
         return {'realized': realized, 'unrealized': unrealized}
 
     def on_market_data(self, market_data):
-        """
-        (Пусто — вызывается в менеджере, если захочешь)
-        """
         pass

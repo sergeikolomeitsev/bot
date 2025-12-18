@@ -11,7 +11,7 @@ from vtr_strategy import VTRStrategy
 
 
 class AIStrategyManager:
-    def __init__(self, freedom_manager, config, analyzer, initial_balance=300):
+    def __init__(self, freedom_manager, config, analyzer, portfolio_baseline=None, portfolio_experiment=None, initial_balance=300):
         self.baseline_file = 'portfolio_baseline.json'
         self.experiment_file = 'portfolio_experiment.json'
         self.freedom_manager = freedom_manager
@@ -19,11 +19,16 @@ class AIStrategyManager:
         self.analyzer = analyzer  # Сохраняем analyzer для передачи стратегиям
         self._init_portfolio_files(initial_balance)
 
-        # Исправленная инициализация стратегий с analyzer через конструктор
-        self.baseline_strategy = HeavyStrategy(self.baseline_file, analyzer=self.analyzer)
+        if portfolio_baseline:
+            self.baseline_strategy = HeavyStrategy(portfolio=portfolio_baseline, analyzer=self.analyzer)
+        else:
+            self.baseline_strategy = HeavyStrategy(self.baseline_file, analyzer=self.analyzer)
 
         risk = self.freedom_manager.apply_experimental_boost()
-        self.experimental_strategy = VTRStrategy(self.experiment_file, risk=risk, analyzer=self.analyzer)
+        if portfolio_experiment:
+            self.experimental_strategy = VTRStrategy(portfolio=portfolio_experiment, risk=risk, analyzer=self.analyzer)
+        else:
+            self.experimental_strategy = VTRStrategy(self.experiment_file, risk=risk, analyzer=self.analyzer)
 
     def _init_portfolio_files(self, balance):
         for fname in [self.baseline_file, self.experiment_file]:

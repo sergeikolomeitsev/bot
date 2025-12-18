@@ -1,8 +1,6 @@
 # ============================================================
-# dependency_container.py — v9.3 (инициализация TradingLoop строго с 4 аргументами)
+# dependency_container.py — v9.4 DI: portfolio injection to all strategies
 # ------------------------------------------------------------
-# DI-контейнер: создание объектов модулей и установка зависимостей для AI PRIME TRADING BOT
-# ============================================================
 
 from config import Config
 from telegram_bot import TelegramBot
@@ -24,7 +22,7 @@ from heartbeat_builder import HeartbeatBuilder
 
 class DependencyContainer:
     """
-    DI-контейнер: создаёт все модули и связывает зависимости строго по контракту v9.3.
+    DI-контейнер: создаёт все модули и связывает зависимости строго по контракту.
     """
 
     def __init__(self):
@@ -49,44 +47,50 @@ class DependencyContainer:
         self.validator = ValidationService()
 
         # ------------------------------------------------------------
-        # STRATEGIES (первым аргументом - путь к json-файлу портфеля)
+        # PORTFOLIOS (инъекция!)
         # ------------------------------------------------------------
-        self.vtr_strategy = VTRStrategy("portfolio_experiment.json", analyzer=self.analyzer)
-        self.heavy_strategy = HeavyStrategy("portfolio_baseline.json", analyzer=self.analyzer)
+        self.portfolio_baseline = PortfolioService(self.config)
+        self.portfolio_experiment = PortfolioService(self.config)
+
+        # ------------------------------------------------------------
+        # STRATEGIES (портфель передаётся обязательно!)
+        # ------------------------------------------------------------
+        self.vtr_strategy = VTRStrategy(self.portfolio_experiment, analyzer=self.analyzer)
+        self.heavy_strategy = HeavyStrategy(self.portfolio_baseline, analyzer=self.analyzer)
 
         # ------------------------------------------------------------
         # CYCLIC DEPS: FREEDOM MANAGER <-> AI STRATEGY MANAGER
         # ------------------------------------------------------------
         self.freedom_manager = FreedomManager(self.config, None)
         print("[DEBUG] DependencyContainer: self.analyzer before manager =", repr(self.analyzer), type(self.analyzer))
-        self.ai_manager = AIStrategyManager(self.freedom_manager, self.config, self.analyzer)
+        self.ai_manager = AIStrategyManager(self.freedom_manager, self.config, self.analyzer,
+                                            portfolio_baseline=self.portfolio_baseline,
+                                            portfolio_experiment=self.portfolio_experiment)
         self.freedom_manager.set_ai_manager(self.ai_manager)
         # ------------------------------------------------------------
         # WS FEED
         # ------------------------------------------------------------
         self.ws_feed = WSPriceFeed(self.config)
-
         # ------------------------------------------------------------
         # MARKET DATA MANAGER
         # ------------------------------------------------------------
         self.market_data = MarketDataManager(self.config, self.ws_feed)
-
-        # ------------------------------------------------------------
-        # PORTFOLIO
-        # ------------------------------------------------------------
-        self.portfolio = PortfolioService(self.config)
-
         # ------------------------------------------------------------
         # AB TESTING ENGINE
         # ------------------------------------------------------------
-        self.ab_engine = ABTestingEngine(self.config, self.analyzer, initial_balance=300)        # ------------------------------------------------------------
+        self.ab_engine = ABTestingEngine(
+            self.config, self.analyzer, initial_balance=300,
+            portfolio_baseline=self.portfolio_baseline,
+            portfolio_experiment=self.portfolio_experiment
+        )
+        # ------------------------------------------------------------
         # TRADING ENGINE
         # ------------------------------------------------------------
         self.trading_engine = TradingEngine(
             self.config,
             self.ai_manager,
             self.analyzer,
-            self.portfolio,
+            self.portfolio_baseline,
             self.utils,
             self.freedom_manager,
             market_data=self.market_data
@@ -98,9 +102,11 @@ class DependencyContainer:
         self.reporting_engine = ReportingEngine(self.telegram_bot)
 
         # ------------------------------------------------------------
-        # TRADING LOOP (ТОЛЬКО 4 аргумента!)
+        # HEARTBEAT & TRADING LOOP
         # ------------------------------------------------------------
-        self.heartbeat = HeartbeatBuilder(self, baseline_strategy = self.heavy_strategy,experimental_strategy = self.vtr_strategy)
+        self.heartbeat = HeartbeatBuilder(self,
+                                          baseline_strategy=self.heavy_strategy,
+                                          experimental_strategy=self.vtr_strategy)
         self.trading_loop = TradingLoop(
             self.config,
             self.ab_engine,
