@@ -21,6 +21,9 @@ class ABTestingEngine:
         self.last_report_date = None
         self.load_history()
 
+        self.baseline_strategy = self.manager.baseline_strategy
+        self.experimental_strategy = self.manager.experimental_strategy
+
     def load_history(self):
         try:
             with open(HISTORY_PATH, 'r') as f:

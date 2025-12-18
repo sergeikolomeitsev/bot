@@ -58,8 +58,7 @@ class TradingOrchestrator:
                 print(f"[{datetime.now()}] ✅ Сформирован heartbeat summary:\n{summary}")
 
                 print(f"[{datetime.now()}] 📤 Отправка heartbeat в Telegram...")
-                result = self.bot.send_heartbeat(summary)
-                print(f"[{datetime.now()}] 📨 Результат отправки heartbeat в Telegram: {result}")
+                self.bot.send_heartbeat(summary)
             except Exception as e:
                 print(f"[{datetime.now()}] 🛑 Exception в heartbeat loop: {e}")
                 try:

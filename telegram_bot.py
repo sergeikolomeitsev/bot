@@ -48,7 +48,6 @@ class TelegramBot:
             "text": text
         }
         response = self._post("sendMessage", data=data)
-        print(">>> TELEGRAM API RESPONSE:", response)
         if not response or not response.get("ok"):
             self.logger.error(f"Telegram send_message failed: {response}")
         return response

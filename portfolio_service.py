@@ -1,12 +1,12 @@
 # ============================================================
-# portfolio_service.py — v2.0 (Single Source of Truth Edition)
+# portfolio_service.py — v2.3 (Суточная статистика для heartbeat)
 # ------------------------------------------------------------
-# Управляет виртуальными позициями бота — промышленный дизайн.
-# Единственный источник правды по позициям и PnL для всех стратегий/бота.
-# Все вызовы открытия/закрытия/запроса состояния — только через PortfolioService!
+# trades_today_stats: теперь основной источник для heartbeat
+# В историю сделок добавлен close_time, heartbeat_builder может брать суточные summary
 # ============================================================
 
 from typing import Dict, Any, Optional
+from datetime import datetime, date
 
 class PortfolioService:
     """
@@ -31,11 +31,37 @@ class PortfolioService:
         self.trades = []
 
     # ------------------------------------------------------------
+    # Подсчет суточных сделок для heartbeat: total, win, loss
+    # ------------------------------------------------------------
+    def trades_today_stats(self):
+        today = date.today()
+        total = win = loss = 0
+        for t in self.trades:
+            close_dt = t.get("close_time")
+            if close_dt:
+                try:
+                    d = datetime.fromisoformat(close_dt).date()
+                except Exception:
+                    d = today
+            else:
+                d = today
+            if d == today:
+                total += 1
+                if t.get("pnl", 0) > 0:
+                    win += 1
+                elif t.get("pnl", 0) < 0:
+                    loss += 1
+        return total, win, loss
+
+    # ------------------------------------------------------------
     # OPEN POSITION (side = 'long' или 'short')
     # ------------------------------------------------------------
     def open_position(self, symbol: str, price: float, amount: float, side: str = "long") -> None:
-        """Открыть позицию (long или short)."""
+        """Открыть позицию (long или short). Если уже открыта — сначала корректно закрыть старую с расчетом PnL!"""
         assert side in ("long", "short")
+        existing = self.positions.get(symbol)
+        if existing is not None:
+            self.close_position(symbol, close_price=price)
         self.positions[symbol] = {
             "symbol": symbol,
             "entry_price": float(price),
@@ -56,6 +82,7 @@ class PortfolioService:
         amount = pos["amount"]
         side = pos.get("side", "long")
         realized = 0.0
+        close_time = datetime.now().isoformat()
         if close_price is not None:
             if side == "long":
                 realized = (close_price - entry) * amount
@@ -68,9 +95,13 @@ class PortfolioService:
                 "close_price": close_price,
                 "amount": amount,
                 "side": side,
-                "pnl": realized
+                "pnl": realized,
+                "close_time": close_time
             })
+            # Здесь суточная статистика только в консоль, для heartbeat читается отдельно через trades_today_stats.
+            total, win, loss = self.trades_today_stats()
             print(f"[PortfolioService] Закрыта позиция: {symbol} {side} qty={amount} @ {close_price} | PnL={realized:.2f}   Total realized: {self.realized_pnl:.2f}")
+            print(f"[PortfolioService] 🔢 Сделок за сегодня: всего={total} | успешных={win} | неуспешных={loss}")
         else:
             print(f"[PortfolioService] Закрыта позиция: {symbol} без расчёта прибыли (нет close_price)")
 
@@ -79,7 +110,7 @@ class PortfolioService:
     # ------------------------------------------------------------
     # GET POSITION
     # ------------------------------------------------------------
-    def get_position(self, symbol: str) -> Optional[Dict[str, float]]:
+    def get_position(self, symbol: str) -> Optional[Dict[str, Any]]:
         return self.positions.get(symbol)
 
     # ------------------------------------------------------------
