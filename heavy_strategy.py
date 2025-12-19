@@ -82,16 +82,16 @@ class HeavyStrategy:
     def generate_signal(self, snapshot, symbol, history=None):
         if symbol in self.active_trades: return None
         if not history or len(history) < 30 or not self.analyzer: return None
-        price = snapshot.get(symbol)
-        ema_fast = self.analyzer.ema(history, 7)
-        ema_slow = self.analyzer.ema(history, 25)
-        highs = [bar['high'] for bar in history]
-        lows = [bar['low'] for bar in history]
+        highs  = [bar['high'] for bar in history]
+        lows   = [bar['low']  for bar in history]
         closes = [bar['close'] for bar in history]
-        adx_val = self.analyzer.adx(highs, lows, closes, 14)
-        atr_val  = self.analyzer.atr(history, 14)
-        gap_val  = self.analyzer.gap(history)
-        rsi_val  = self.analyzer.rsi(history, 14)
+        price = closes[-1]
+        ema_fast = self.analyzer.ema(closes, 7)
+        ema_slow = self.analyzer.ema(closes, 25)
+        adx_val  = self.analyzer.adx(highs, lows, closes, 14)
+        atr_val  = self.analyzer.atr(highs, lows, closes, 14)
+        gap_val  = self.analyzer.gap(closes)
+        rsi_val  = self.analyzer.rsi(closes, 14)
         if None in (ema_fast, ema_slow, adx_val, atr_val, gap_val, rsi_val): return None
         # Фильтр по adx и atr
         if adx_val < self.MIN_ADX or atr_val / price < self.MIN_ATR_RATIO:

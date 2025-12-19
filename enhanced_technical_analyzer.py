@@ -97,56 +97,59 @@ class EnhancedTechnicalAnalyzer:
         diffs = [abs(arr[i] - arr[i - 1]) for i in range(1, len(arr))]
         return float(sum(diffs) / len(diffs))
 
-    def adx(self, highs: list, lows: list, closes: list, period: int = 14) -> float:
-        """
-        Highs, lows, closes — списки значений (float), одинаковой длины ≥ period+1.
-        Возвращает значение ADX по классике Уайлдера.
-        """
-        if (
-            highs is None or lows is None or closes is None or
-            len(highs) != len(lows) or len(lows) != len(closes) or
-            len(closes) < period + 1
-        ):
-            return None
+    def adx(self, highs, lows, closes, period=14):
+            if (
+                    highs is None or lows is None or closes is None or
+                    len(highs) != len(lows) or len(lows) != len(closes) or
+                    len(closes) < period + 1
+            ):
+                return None
+            tr_list, plus_dm_list, minus_dm_list = [], [], []
+            for i in range(1, len(closes)):
+                high = highs[i]
+                low = lows[i]
+                prev_high = highs[i - 1]
+                prev_low = lows[i - 1]
+                prev_close = closes[i - 1]
+                tr = max(
+                    high - low,
+                    abs(high - prev_close),
+                    abs(low - prev_close)
+                )
+                plus_dm = high - prev_high if (high - prev_high) > (prev_low - low) and (high - prev_high) > 0 else 0
+                minus_dm = prev_low - low if (prev_low - low) > (high - prev_high) and (prev_low - low) > 0 else 0
+                tr_list.append(tr)
+                plus_dm_list.append(plus_dm)
+                minus_dm_list.append(minus_dm)
 
-        tr_list, plus_dm_list, minus_dm_list = [], [], []
+            def wilder_smooth(values):
+                result = [sum(values[:period])]
+                for val in values[period:]:
+                    result.append(result[-1] - (result[-1] / period) + val)
+                return result
 
-        for i in range(1, len(closes)):
-            high = highs[i]
-            low = lows[i]
-            prev_high = highs[i - 1]
-            prev_low = lows[i - 1]
-            prev_close = closes[i - 1]
+            tr_smoothed = wilder_smooth(tr_list)
+            plus_dm_smoothed = wilder_smooth(plus_dm_list)
+            minus_dm_smoothed = wilder_smooth(minus_dm_list)
+            plus_di = [100 * p / t if t else 0 for p, t in zip(plus_dm_smoothed, tr_smoothed)]
+            minus_di = [100 * m / t if t else 0 for m, t in zip(minus_dm_smoothed, tr_smoothed)]
+            dx = [100 * abs(p - m) / (p + m) if (p + m) else 0 for p, m in zip(plus_di, minus_di)]
+            if len(dx) < period:
+                return None
+            adx_values = [sum(dx[:period]) / period]
+            for d in dx[period:]:
+                adx_values.append((adx_values[-1] * (period - 1) + d) / period)
+            return float(adx_values[-1]) if adx_values else None
 
-            tr = max(
-                high - low,
-                abs(high - prev_close),
-                abs(low - prev_close)
-            )
-            plus_dm = high - prev_high if (high - prev_high) > (prev_low - low) and (high - prev_high) > 0 else 0
-            minus_dm = prev_low - low if (prev_low - low) > (high - prev_high) and (prev_low - low) > 0 else 0
-
-            tr_list.append(tr)
-            plus_dm_list.append(plus_dm)
-            minus_dm_list.append(minus_dm)
-
-        def wilder_smooth(values):
-            result = [sum(values[:period])]
-            for val in values[period:]:
-                result.append(result[-1] - (result[-1] / period) + val)
-            return result
-
-        tr_smoothed = wilder_smooth(tr_list)
-        plus_dm_smoothed = wilder_smooth(plus_dm_list)
-        minus_dm_smoothed = wilder_smooth(minus_dm_list)
-
-        plus_di = [100 * p / t if t else 0 for p, t in zip(plus_dm_smoothed, tr_smoothed)]
-        minus_di = [100 * m / t if t else 0 for m, t in zip(minus_dm_smoothed, tr_smoothed)]
-        dx = [100 * abs(p - m) / (p + m) if (p + m) else 0 for p, m in zip(plus_di, minus_di)]
-
-        if len(dx) < period:
-            return None
-        adx_values = [sum(dx[:period]) / period]
-        for d in dx[period:]:
-            adx_values.append((adx_values[-1] * (period - 1) + d) / period)
-        return float(adx_values[-1]) if adx_values else None
+    def atr(self, highs, lows, closes, period=14):
+            if highs is None or lows is None or closes is None or len(closes) < period + 1:
+                return None
+            trs = []
+            for i in range(1, len(closes)):
+                tr = max(
+                    highs[i] - lows[i],
+                    abs(highs[i] - closes[i - 1]),
+                    abs(lows[i] - closes[i - 1])
+                )
+                trs.append(tr)
+            return sum(trs[-period:]) / period if len(trs) >= period else None
