@@ -85,7 +85,10 @@ class VTRStrategy:
         price = snapshot.get(symbol)
         ema_fast = self.analyzer.ema(history, 7)
         ema_slow = self.analyzer.ema(history, 25)
-        adx_val  = self.analyzer.adx(history, 14)
+        highs = [bar['high'] for bar in history]
+        lows = [bar['low'] for bar in history]
+        closes = [bar['close'] for bar in history]
+        adx_val = self.analyzer.adx(highs, lows, closes, 14)
         atr_val  = self.analyzer.atr(history, 14)
         gap_val  = self.analyzer.gap(history)
         rsi_val  = self.analyzer.rsi(history, 14)
