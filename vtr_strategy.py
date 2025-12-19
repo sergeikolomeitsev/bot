@@ -1,21 +1,29 @@
 # ============================================================
-# VTR STRATEGY v10.6 — ФИЛЬТРЫ: strength, min_hold, N-confirm
+# VTR STRATEGY v11.0 — TP/SL, trailing, ADX+ATR, risk/MM, комиссия
 # ============================================================
 
 from typing import Dict, Any, List, Optional
 
 class VTRStrategy:
-    MIN_SIGNAL_STRENGTH = 0.15    # порог силы сигнала
-    MIN_HOLD_BARS = 3             # минимум баров держим позицию
-    N_CONFIRM = 2                 # число одинаковых сигналов подряд для подтверждения
+    INIT_STACK = 300.0
+    TAKE_PROFIT_PCT = 0.004
+    STOP_LOSS_PCT = 0.002
+    TRAILING_PCT = 0.002
+    FEE_PCT = 0.0007
+    SPREAD_PCT = 0.0005
+    MAX_RISK_PCT = 0.05
+    MIN_RISK_PCT = 0.01
+    MIN_ADX = 20
+    MIN_ATR_RATIO = 0.001
+    MIN_CONFIDENCE = 0.16
 
-    def __init__(self, portfolio, risk=1.0, analyzer=None):
+    def __init__(self, portfolio, analyzer=None):
         self.portfolio = portfolio
         self.analyzer = analyzer
-        self.risk = risk
-        self.bar_count = 0
-        self.position_opened_at = {}       # symbol -> bar_opened
-        self.last_signals = {}             # symbol -> [signal1, signal2, ...] (FIFO)
+        self.active_trades = {}
+        self.balance = self.INIT_STACK
+        self.in_market = set()
+        self.last_signals = {}
 
     @property
     def positions(self):
@@ -25,82 +33,76 @@ class VTRStrategy:
     def trades(self):
         return self.portfolio.trades
 
-    def on_bar(self):
-        """Вызывать это при каждом новом баре/time step (инкрементируем счетчик баров)."""
-        self.bar_count += 1
+    def update_balance(self):
+        self.balance = self.INIT_STACK + sum([t.get("pnl",0) for t in self.portfolio.trades])
 
-    def open_position(self, symbol, price, amount, side="long"):
+    def can_trade(self):
+        self.update_balance()
+        return self.balance >= self.INIT_STACK
+
+    def get_trade_amount(self, price, confidence):
+        stack = max(self.balance, self.INIT_STACK)
+        pct = max(self.MIN_RISK_PCT, min(confidence, self.MAX_RISK_PCT))
+        usdt = stack * pct
+        return max(round(usdt/price, 6), 0.0001)
+
+    def open_position(self, symbol, price, confidence, side):
+        if not self.can_trade(): return
+        if symbol in self.active_trades: return
+        amount = self.get_trade_amount(price, confidence)
+        fee = self.FEE_PCT + self.SPREAD_PCT
+        tp  = price * (1 + self.TAKE_PROFIT_PCT - fee) if side=="long" else price * (1 - self.TAKE_PROFIT_PCT + fee)
+        sl  = price * (1 - self.STOP_LOSS_PCT - fee) if side=="long" else price * (1 + self.STOP_LOSS_PCT + fee)
+        trailing = self.TRAILING_PCT * price
         self.portfolio.open_position(symbol, price, amount, side)
-        self.position_opened_at[symbol] = self.bar_count
+        self.active_trades[symbol] = {"entry": price, "amount": amount, "side": side, "tp": tp, "sl": sl, "trailing": trailing, "extremum": price}
 
-    def close_position(self, symbol, close_price=None):
-        if not self.can_close_position(symbol):
-            print(f"[VTRStrategy] Позу {symbol} нельзя закрыть — не выдержан min_hold!")
-            return
-        self.portfolio.close_position(symbol, close_price)
-        self.position_opened_at.pop(symbol, None)
+    def close_position(self, symbol, price):
+        self.portfolio.close_position(symbol, price)
+        self.active_trades.pop(symbol, None)
+        self.in_market.discard(symbol)
+        self.update_balance()
 
-    def can_close_position(self, symbol):
-        opened_at = self.position_opened_at.get(symbol)
-        if opened_at is None:
-            return True
-        return (self.bar_count - opened_at) >= self.MIN_HOLD_BARS
+    def on_tick(self, snapshot):
+        for symbol, trade in list(self.active_trades.items()):
+            price = snapshot.get(symbol)
+            if not price: continue
+            # trailing update
+            if trade["side"] == "long":
+                if price > trade["extremum"]: trade["extremum"] = price
+                stop = trade["extremum"] - trade["trailing"]
+                if price <= stop or price >= trade["tp"] or price <= trade["sl"]:
+                    self.close_position(symbol, price)
+            else:
+                if price < trade["extremum"]: trade["extremum"] = price
+                stop = trade["extremum"] + trade["trailing"]
+                if price >= stop or price <= trade["tp"] or price >= trade["sl"]:
+                    self.close_position(symbol, price)
 
-    def calc_pnl(self, symbol, price):
-        return self.portfolio.calc_pnl(symbol, price)
-
-    def update_signal_buffer(self, symbol, current_signal):
-        buf = self.last_signals.setdefault(symbol, [])
-        buf.append(current_signal)
-        if len(buf) > self.N_CONFIRM:
-            buf.pop(0)
-        # возвращает истину, если последние N_CONFIRM сигналов одинаковы и не hold
-        return len(buf) == self.N_CONFIRM and len(set(buf)) == 1 and buf[-1] != "hold"
-
-    def generate_signal(
-        self,
-        snapshot: Dict[str, Any],
-        symbol: str,
-        history: Optional[List[float]] = None
-    ) -> Optional[Dict[str, Any]]:
+    def generate_signal(self, snapshot, symbol, history=None):
+        if symbol in self.active_trades: return None
+        if not history or len(history) < 30 or not self.analyzer: return None
         price = snapshot.get(symbol)
-        if price is None or history is None or len(history) < 20 or self.analyzer is None:
-            return None
-
-        ema_fast = self.analyzer.ema(history, 5)
-        ema_slow = self.analyzer.ema(history, 14)
-        gap_val = self.analyzer.gap(history)
-
-        if ema_fast is None or ema_slow is None or gap_val is None:
-            return None
-
-        signal = "hold"
-        strength = 0.0
-
-        # LONG logic (buy/open/hold long)
-        if ema_fast > ema_slow and gap_val > 0:
-            strength = float(abs(gap_val) * self.risk)
-            if strength >= self.MIN_SIGNAL_STRENGTH:
-                signal = "long"
-        # SHORT logic (sell/open/hold short)
-        elif ema_fast < ema_slow and gap_val < 0:
-            strength = float(abs(gap_val) * self.risk)
-            if strength >= self.MIN_SIGNAL_STRENGTH:
-                signal = "short"
-
-        # --- Фильтрация по N_CONFIRM ---
-        confirmed = self.update_signal_buffer(symbol, signal)
-        if not confirmed:
-            # Требуем подтверждения N_CONFIRM раз подряд
+        ema_fast = self.analyzer.ema(history, 7)
+        ema_slow = self.analyzer.ema(history, 25)
+        adx_val  = self.analyzer.adx(history, 14)
+        atr_val  = self.analyzer.atr(history, 14)
+        gap_val  = self.analyzer.gap(history)
+        rsi_val  = self.analyzer.rsi(history, 14)
+        if None in (ema_fast, ema_slow, adx_val, atr_val, gap_val, rsi_val): return None
+        # Фильтр по adx и atr
+        if adx_val < self.MIN_ADX or atr_val / price < self.MIN_ATR_RATIO:
             return {"symbol": symbol, "signal": "hold", "strength": 0.0}
-
-        return {"symbol": symbol, "signal": signal, "strength": strength}
+        # Confidence = динамический вес риска
+        confidence = min(abs(gap_val)*1.1 + (adx_val-self.MIN_ADX)*0.04, self.MAX_RISK_PCT)
+        signal = "hold"
+        if ema_fast > ema_slow and gap_val > 0 and rsi_val < 65 and confidence >= self.MIN_CONFIDENCE:
+            signal = "long"
+        elif ema_fast < ema_slow and gap_val < 0 and rsi_val > 38 and confidence >= self.MIN_CONFIDENCE:
+            signal = "short"
+        return {"symbol": symbol, "signal": signal, "strength": confidence}
 
     def get_pnl(self, snapshot=None):
-        """
-        Возвращает pnl по реализованным и нереализованным позициям:
-        {'realized': ..., 'unrealized': ...}
-        """
         realized = sum([t.get('pnl', 0) for t in self.trades])
         unrealized = 0
         if snapshot:
@@ -115,6 +117,3 @@ class VTRStrategy:
                     else:
                         unrealized += (entry - price) * size
         return {'realized': realized, 'unrealized': unrealized}
-
-    def on_market_data(self, market_data):
-        pass

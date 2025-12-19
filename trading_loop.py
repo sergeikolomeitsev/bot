@@ -66,35 +66,16 @@ class TradingLoop:
                 ("baseline", baseline_strategy),
                 ("experimental", experimental_strategy)
             ]
+
+            for strat_name, strategy in strategies:
+                strategy.on_tick(market_snapshot)  # стратегия сама обрабатывает TP/SL/trailing/etc
+
+            # При необходимости можно "для информации" писать сигналы, но ТОЛЬКО для мониторинга:
             for symbol, price in market_snapshot.items():
                 history = self.market_data.get_history(symbol)
                 for strat_name, strategy in strategies:
                     sig = strategy.generate_signal(market_snapshot, symbol, history)
-                    if sig is None:
-                        logger.debug(f"[{strat_name}] [{symbol}] No signal generated")
-                        continue
-                    signal = sig.get("signal")
-                    strength = sig.get("strength", 0.0)
-                    pos = strategy.positions.get(symbol)
-                    # Открытие/закрытие позиций на основе сигнала
-                    if signal == "long":
-                        if not pos or pos.get("side") != "long":
-                            if pos:
-                                logger.info(f"[{strat_name}] [{symbol}] Closing {pos['side']} to open LONG")
-                                strategy.close_position(symbol, price)
-                            logger.info(f"[{strat_name}] [{symbol}] Opening LONG at {price}")
-                            strategy.open_position(symbol, price, amount=strength, side="long")
-                    elif signal == "short":
-                        if not pos or pos.get("side") != "short":
-                            if pos:
-                                logger.info(f"[{strat_name}] [{symbol}] Closing {pos['side']} to open SHORT")
-                                strategy.close_position(symbol, price)
-                            logger.info(f"[{strat_name}] [{symbol}] Opening SHORT at {price}")
-                            strategy.open_position(symbol, price, amount=strength, side="short")
-                    elif signal == "hold":
-                        logger.debug(f"[{strat_name}] [{symbol}] Holding position")
-                    else:
-                        logger.warning(f"[{strat_name}] [{symbol}] Unknown signal: {signal}")
+                    # Можно логировать сигналы для heartbeat или аналитики, но НИКАКОГО open/close!
 
             # heartbeat раз в 300 сек
             if self.heartbeat and (now - last_heartbeat > 300):

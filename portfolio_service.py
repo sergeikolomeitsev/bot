@@ -1,8 +1,5 @@
 # ============================================================
-# portfolio_service.py — v2.4 (DI-integration, dump/load methods, heartbeat sync)
-# ------------------------------------------------------------
-# Теперь добавлены методы save_to_file/load_from_file (опционально JSON путь передают стратегии, если нужно),
-# после КАЖДОЙ сделки состояние обязательно сохраняется!
+# portfolio_service.py — v2.5 (TP, SL, trailing_extremum fields in trade history)
 # ============================================================
 
 from typing import Dict, Any, Optional
@@ -55,7 +52,8 @@ class PortfolioService:
                     loss += 1
         return total, win, loss
 
-    def open_position(self, symbol: str, price: float, amount: float, side: str = "long") -> None:
+    def open_position(self, symbol: str, price: float, amount: float, side: str = "long",
+                      tp: Optional[float]=None, sl: Optional[float]=None, trailing_extremum: Optional[float]=None) -> None:
         assert side in ("long", "short")
         existing = self.positions.get(symbol)
         if existing is not None:
@@ -64,9 +62,12 @@ class PortfolioService:
             "symbol": symbol,
             "entry_price": float(price),
             "amount": float(amount),
-            "side": side
+            "side": side,
+            "tp": tp,
+            "sl": sl,
+            "trailing_extremum": trailing_extremum
         }
-        print(f"[PortfolioService] Открыта позиция: {symbol} {side} qty={amount} @ {price}")
+        print(f"[PortfolioService] Открыта позиция: {symbol} {side} qty={amount} @ {price} TP={tp} SL={sl} trailing={trailing_extremum}")
         self.save_to_file()
 
     def close_position(self, symbol: str, close_price: Optional[float] = None) -> None:
@@ -77,6 +78,9 @@ class PortfolioService:
         entry = pos["entry_price"]
         amount = pos["amount"]
         side = pos.get("side", "long")
+        tp = pos.get("tp")
+        sl = pos.get("sl")
+        trailing_extremum = pos.get("trailing_extremum")
         realized = 0.0
         close_time = datetime.now().isoformat()
         if close_price is not None:
@@ -92,6 +96,9 @@ class PortfolioService:
                 "amount": amount,
                 "side": side,
                 "pnl": realized,
+                "tp": tp,
+                "sl": sl,
+                "trailing_extremum": trailing_extremum,
                 "close_time": close_time
             })
             total, win, loss = self.trades_today_stats()
