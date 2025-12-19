@@ -17,7 +17,7 @@ class VTRStrategy:
     MIN_ATR_RATIO = 0.001
     MIN_CONFIDENCE = 0.16
 
-    def __init__(self, portfolio, analyzer=None):
+    def __init__(self, portfolio, risk=1.0, analyzer=None):
         self.portfolio = portfolio
         self.analyzer = analyzer
         self.active_trades = {}
