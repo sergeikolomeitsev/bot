@@ -1,5 +1,5 @@
 # ============================================================
-# TRADING ENGINE v9.3 — Real-Market Indicators + Short Support
+# TRADING ENGINE v9.4 — Real-Market Indicators + Short Support
 # ------------------------------------------------------------
 # ✔ Получает real-market history через DI
 # ✔ Передаёт history в стратегию
@@ -7,6 +7,7 @@
 # ✔ PnL считается только при наличии позиции
 # ✔ Поддержка long и short: сигналы "long", "short", закрытие/открытие/удержание
 # ============================================================
+
 
 from typing import Dict, Any, Optional
 
@@ -69,16 +70,16 @@ class TradingEngine:
         strength = raw_strength * self.freedom.get_multiplier()
 
         price = snapshot.get(symbol)
-        pos = self.portfolio.get_position(symbol)
+        # объединяем получение позиции через стратегию (ведь стратегия хранит активные трейды и работает с портфелем)
+        pos = strategy.positions.get(symbol) if hasattr(strategy, "positions") else None
         action = None
 
-        # 4) Обработка сигнала с поддержкой шорта
+        # 4) Обработка сигнала с поддержкой шорта — ВСЕГДА через методы стратегии!
         if signal == "long":
             if not pos or pos.get("side") != "long":
                 if pos:
-                    # Закрываем противоположную позицию
-                    self.portfolio.close_position(symbol, price)
-                self.portfolio.open_position(symbol, price, amount=strength, side="long")
+                    strategy.close_position(symbol, price)
+                strategy.open_position(symbol, price, strength, "long")
                 explanation = "Open LONG"
                 action = "open_long"
             else:
@@ -88,9 +89,8 @@ class TradingEngine:
         elif signal == "short":
             if not pos or pos.get("side") != "short":
                 if pos:
-                    # Закрываем противоположную позицию
-                    self.portfolio.close_position(symbol, price)
-                self.portfolio.open_position(symbol, price, amount=strength, side="short")
+                    strategy.close_position(symbol, price)
+                strategy.open_position(symbol, price, strength, "short")
                 explanation = "Open SHORT"
                 action = "open_short"
             else:
@@ -105,11 +105,11 @@ class TradingEngine:
             explanation = f"Unknown signal: {signal}"
             action = "error"
 
-        # 5) PnL
+        # 5) PnL (можно получить у стратегии, если нужно)
         pnl = None
-        if pos and price is not None:
+        if pos and price is not None and hasattr(strategy, "get_pnl"):
             try:
-                pnl = self.portfolio.calc_pnl(symbol, float(price))
+                pnl = strategy.get_pnl(snapshot).get("realized", None)
             except Exception:
                 pnl = None
 
