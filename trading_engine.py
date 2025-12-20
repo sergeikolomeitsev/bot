@@ -1,13 +1,11 @@
 # ============================================================
-# TRADING ENGINE v9.4 — Real-Market Indicators + Short Support
+# TRADING ENGINE v9.5 — Параллельное управление двумя стратегиями
 # ------------------------------------------------------------
 # ✔ Получает real-market history через DI
-# ✔ Передаёт history в стратегию
-# ✔ Корректно считает strength + freedom
-# ✔ PnL считается только при наличии позиции
-# ✔ Поддержка long и short: сигналы "long", "short", закрытие/открытие/удержание
+# ✔ Передаёт history сразу в обе стратегии через parallel_step
+# ✔ Для каждого символа рассчитывает сигналы, действия, PnL для baseline и experimental
+# ✔ Корректно ведёт логику открытия/закрытия для двух портфелей
 # ============================================================
-
 
 from typing import Dict, Any, Optional
 
@@ -17,21 +15,20 @@ class TradingEngine:
         config,
         ai_manager,
         analyzer,
-        portfolio,
-        utils,
-        freedom,
+        portfolio=None,     # теперь портфели у стратегий!
+        utils=None,
+        freedom=None,
         market_data=None
     ):
         self.cfg = config
         self.ai_manager = ai_manager
         self.analyzer = analyzer
-        self.portfolio = portfolio
         self.utils = utils
         self.freedom = freedom
         self.market_data = market_data  # DI injected MarketDataManager
 
     # ------------------------------------------------------------
-    # PROCESS ONE SYMBOL (с поддержкой шортов)
+    # PROCESS ONE SYMBOL (ПАРАЛЛЕЛЬНО ДЛЯ BASE и EXPERIMENTAL)
     # ------------------------------------------------------------
     def process(
         self,
@@ -41,84 +38,83 @@ class TradingEngine:
         return_explanation: bool = False
     ):
         """
-        Главный метод вычисления торгового решения.
-        Возвращает decision, либо (decision, explanation)
+        Параллельный расчет решений и действий для baseline и experimental стратегий.
+        Возвращает dict из двух решений или (dict, dict_explanation)
         """
 
-        # 1) Выбираем активную стратегию
-        strategy = self.ai_manager.get_active_strategy()
-        if strategy is None:
-            explanation = "No active strategy"
-            return (None, explanation) if return_explanation else None
-
-        # 2) Получаем историю, если TradingLoop не передал её напрямую
+        # 1) Получаем историю, если TradingLoop не передал её напрямую
         if history is None and self.market_data is not None:
             history = self.market_data.get_history(symbol)
 
         if not history or len(history) < 10:
-            explanation = "History too short"
+            explanation = {
+                'baseline': 'History too short',
+                'experimental': 'History too short'
+            }
             return (None, explanation) if return_explanation else None
 
-        # 3) Генерация сигнала
-        sig = strategy.generate_signal(snapshot, symbol, history)
-        if sig is None:
-            explanation = "Strategy returned None"
-            return (None, explanation) if return_explanation else None
+        # 2) Запускаем parallel_step менеджера стратегий
+        freedom = self.freedom.get_multiplier() if self.freedom is not None else 1.0
+        results = self.ai_manager.parallel_step(
+            market_data=self.market_data,
+            snapshot=snapshot,
+            symbol=symbol,
+            history=history,
+            freedom=freedom,
+            return_decisions=True
+        )
+        # results: {
+        #   'baseline': {'signal': ..., 'action': ...},
+        #   'experimental': {'signal': ..., 'action': ...},
+        # }
 
-        signal = sig.get("signal")
-        raw_strength = float(sig.get("strength", 0.0))
-        strength = raw_strength * self.freedom.get_multiplier()
-
+        # 3) Получаем price из snapshot
         price = snapshot.get(symbol)
-        # объединяем получение позиции через стратегию (ведь стратегия хранит активные трейды и работает с портфелем)
-        pos = strategy.positions.get(symbol) if hasattr(strategy, "positions") else None
-        action = None
 
-        # 4) Обработка сигнала с поддержкой шорта — ВСЕГДА через методы стратегии!
-        if signal == "long":
-            if not pos or pos.get("side") != "long":
-                if pos:
-                    strategy.close_position(symbol, price)
-                strategy.open_position(symbol, price, strength, "long")
+        # 4) Собираем и рассчитываем информацию по обоим стратегиям
+        decisions = {}
+        explanations = {}
+        for mode, res in results.items():
+            strat = self.ai_manager.baseline_strategy if mode == 'baseline' else self.ai_manager.experimental_strategy
+            sig = res.get('signal')
+            action = res.get('action')
+
+            # Для PnL, позиции и силы сигнала
+            strength = float(sig.get('strength', 0.0)) if sig else 0.0
+            signal = sig.get('signal') if sig else 'hold'
+            pos = strat.positions.get(symbol) if hasattr(strat, "positions") else None
+
+            pnl = None
+            if pos and price is not None and hasattr(strat, "get_pnl"):
+                try:
+                    pnl = strat.get_pnl(snapshot).get("realized", None)
+                except Exception:
+                    pnl = None
+
+            explanation = None
+            if action == 'open_long':
                 explanation = "Open LONG"
-                action = "open_long"
-            else:
-                explanation = "Already in LONG"
-                action = "hold_long"
-
-        elif signal == "short":
-            if not pos or pos.get("side") != "short":
-                if pos:
-                    strategy.close_position(symbol, price)
-                strategy.open_position(symbol, price, strength, "short")
+            elif action == 'open_short':
                 explanation = "Open SHORT"
-                action = "open_short"
-            else:
+            elif action == 'hold_long':
+                explanation = "Already in LONG"
+            elif action == 'hold_short':
                 explanation = "Already in SHORT"
-                action = "hold_short"
+            elif action == 'hold':
+                explanation = "Hold"
+            else:
+                explanation = f"Unknown action: {action}"
 
-        elif signal == "hold":
-            explanation = "Hold"
-            action = "hold"
+            decisions[mode] = {
+                "symbol": symbol,
+                "signal": signal,
+                "strength": strength,
+                "pnl": pnl,
+                "action": action
+            }
+            explanations[mode] = explanation
 
+        if return_explanation:
+            return (decisions, explanations)
         else:
-            explanation = f"Unknown signal: {signal}"
-            action = "error"
-
-        # 5) PnL (можно получить у стратегии, если нужно)
-        pnl = None
-        if pos and price is not None and hasattr(strategy, "get_pnl"):
-            try:
-                pnl = strategy.get_pnl(snapshot).get("realized", None)
-            except Exception:
-                pnl = None
-
-        # 6) Decision объект
-        decision = {
-            "symbol": symbol,
-            "signal": signal,
-            "strength": strength,
-            "pnl": pnl,
-            "action": action
-        }
-        return (decision, explanation) if return_explanation else decision
+            return decisions

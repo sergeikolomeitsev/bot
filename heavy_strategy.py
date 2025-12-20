@@ -53,6 +53,9 @@ class HeavyStrategy:
         return max(round(usdt/price, 6), 0.0001)
 
     def open_position(self, symbol, price, confidence, side):
+        print(f"DEBUG open_position CALLED. {symbol=} {price=} {confidence=} {side=}")
+        self.portfolio_logger.log("debug_open_position_called", symbol=symbol, price=price, confidence=confidence,
+                                  side=side)
         if not self.can_trade():
             self.portfolio_logger.log("open_position_blocked", symbol=symbol, reason="cant_trade", balance=self.balance)
             return
