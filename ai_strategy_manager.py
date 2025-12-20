@@ -8,6 +8,7 @@
 import json
 from heavy_strategy import HeavyStrategy
 from vtr_strategy import VTRStrategy
+from portfolio_service import PortfolioService  # ДОБАВЛЯЕМ!
 
 
 class AIStrategyManager:
@@ -19,16 +20,15 @@ class AIStrategyManager:
         self.analyzer = analyzer  # Сохраняем analyzer для передачи стратегиям
         self._init_portfolio_files(initial_balance)
 
-        if portfolio_baseline:
-            self.baseline_strategy = HeavyStrategy(portfolio=portfolio_baseline, analyzer=self.analyzer)
-        else:
-            self.baseline_strategy = HeavyStrategy(self.baseline_file, analyzer=self.analyzer)
+        # ------- ПРАВИЛЬНО создаём portfolio как объект -------
+        if portfolio_baseline is None:
+            portfolio_baseline = PortfolioService(config, path=self.baseline_file)
+        if portfolio_experiment is None:
+            portfolio_experiment = PortfolioService(config, path=self.experiment_file)
 
+        self.baseline_strategy = HeavyStrategy(portfolio=portfolio_baseline, analyzer=self.analyzer)
         risk = self.freedom_manager.apply_experimental_boost()
-        if portfolio_experiment:
-            self.experimental_strategy = VTRStrategy(portfolio=portfolio_experiment, risk=risk, analyzer=self.analyzer)
-        else:
-            self.experimental_strategy = VTRStrategy(self.experiment_file, risk=risk, analyzer=self.analyzer)
+        self.experimental_strategy = VTRStrategy(portfolio=portfolio_experiment, risk=risk, analyzer=self.analyzer)
 
     def _init_portfolio_files(self, balance):
         for fname in [self.baseline_file, self.experiment_file]:
