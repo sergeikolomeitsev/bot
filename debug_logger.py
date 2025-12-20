@@ -1,46 +1,45 @@
 import json
 import threading
+from datetime import datetime
 
 class DebugLogger:
-    ENABLED = False
-    LOG_PATH = "strategy_debug_log.json"
-    _lock = threading.Lock()
-    _cache = []
+    def __init__(self, path, max_records=10000):
+        self.enabled = False
+        self.log_path = path
+        self.lock = threading.Lock()
+        self._cache = []
+        self.max_records = max_records
 
-    @classmethod
-    def enable(cls):
-        cls.ENABLED = True
+    def enable(self):
+        self.enabled = True
 
-    @classmethod
-    def disable(cls):
-        cls.ENABLED = False
+    def disable(self):
+        self.enabled = False
 
-    @classmethod
-    def set_path(cls, path):
-        cls.LOG_PATH = path
-
-    @classmethod
-    def log(cls, message, **kwargs):
-        if not cls.ENABLED:
+    def log(self, message, **kwargs):
+        if not self.enabled:
             return
         entry = {
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f"),
             "message": message,
             "details": kwargs
         }
-        with cls._lock:
-            cls._cache.append(entry)
+        with self.lock:
+            self._cache.append(entry)
+            # Ограничение размера — только последние N записей
+            if len(self._cache) > self.max_records:
+                self._cache = self._cache[-self.max_records:]
             try:
-                with open(cls.LOG_PATH, "w") as f:
-                    json.dump(cls._cache, f, indent=2, ensure_ascii=False)
+                with open(self.log_path, "w") as f:
+                    json.dump(self._cache, f, indent=2, ensure_ascii=False)
             except Exception as e:
                 print(f"[DebugLogger] Write error: {e}")
 
-    @classmethod
-    def clear(cls):
-        with cls._lock:
-            cls._cache = []
+    def clear(self):
+        with self.lock:
+            self._cache = []
             try:
-                with open(cls.LOG_PATH, "w") as f:
+                with open(self.log_path, "w") as f:
                     json.dump([], f)
             except Exception:
                 pass

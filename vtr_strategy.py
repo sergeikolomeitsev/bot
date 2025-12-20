@@ -1,5 +1,5 @@
 # ============================================================
-# VTR STRATEGY v11.1 — TP/SL, trailing, ADX+ATR, risk/MM, комиссия, JSON-ДЕБАГ
+# VTR STRATEGY v11.2 — TP/SL, trailing, ADX+ATR, risk/MM, комиссия, индивидуальный JSON-логгер
 # ============================================================
 
 from typing import Dict, Any, List, Optional
@@ -14,11 +14,14 @@ class VTRStrategy:
     SPREAD_PCT = 0.0005
     MAX_RISK_PCT = 0.05
     MIN_RISK_PCT = 0.01
-    MIN_ADX = 10  # более агрессивно
+    MIN_ADX = 10
     MIN_ATR_RATIO = 0.00005
     MIN_CONFIDENCE = 0.04
 
     def __init__(self, portfolio, risk=1.0, analyzer=None):
+        self.logger = DebugLogger("vtr_strategy_debug.json")
+        self.logger.enable()
+
         self.portfolio = portfolio
         self.analyzer = analyzer
         self.active_trades = {}
@@ -57,14 +60,14 @@ class VTRStrategy:
         trailing = self.TRAILING_PCT * price
         self.portfolio.open_position(symbol, price, amount, side)
         self.active_trades[symbol] = {"entry": price, "amount": amount, "side": side, "tp": tp, "sl": sl, "trailing": trailing, "extremum": price}
-        DebugLogger.log("open_position", symbol=symbol, price=price, amount=amount, side=side, confidence=confidence, tp=tp, sl=sl, trailing=trailing)
+        self.logger.log("open_position", symbol=symbol, price=price, amount=amount, side=side, confidence=confidence, tp=tp, sl=sl, trailing=trailing)
 
     def close_position(self, symbol, price):
         self.portfolio.close_position(symbol, price)
         self.active_trades.pop(symbol, None)
         self.in_market.discard(symbol)
         self.update_balance()
-        DebugLogger.log("close_position", symbol=symbol, price=price)
+        self.logger.log("close_position", symbol=symbol, price=price)
 
     def on_tick(self, snapshot):
         for symbol, trade in list(self.active_trades.items()):
@@ -82,18 +85,18 @@ class VTRStrategy:
                     self.close_position(symbol, price)
 
     def generate_signal(self, snapshot, symbol, history=None):
-        DebugLogger.log("generate_signal called", symbol=symbol, len_history=len(history) if history else None)
+        self.logger.log("generate_signal called", symbol=symbol, len_history=len(history) if history else None)
         if symbol in self.active_trades:
-            DebugLogger.log("already in active_trades", symbol=symbol)
+            self.logger.log("already in active_trades", symbol=symbol)
             return None
         if not history:
-            DebugLogger.log("history is None or empty", symbol=symbol)
+            self.logger.log("history is None or empty", symbol=symbol)
             return None
         if len(history) < 30:
-            DebugLogger.log("insufficient history", symbol=symbol, length=len(history))
+            self.logger.log("insufficient history", symbol=symbol, length=len(history))
             return None
         if not self.analyzer:
-            DebugLogger.log("analyzer is None", symbol=symbol)
+            self.logger.log("analyzer is None", symbol=symbol)
             return None
 
         highs  = [bar['high'] for bar in history]
@@ -107,7 +110,7 @@ class VTRStrategy:
         atr_val  = self.analyzer.atr(highs, lows, closes, 14)
         rsi_val  = self.analyzer.rsi(closes, 14)
 
-        DebugLogger.log(
+        self.logger.log(
             "indicators",
             symbol=symbol,
             price=price,
@@ -119,25 +122,25 @@ class VTRStrategy:
         )
 
         if None in (ema_fast, ema_slow, adx_val, atr_val, rsi_val):
-            DebugLogger.log("missing indicator", symbol=symbol)
+            self.logger.log("missing indicator", symbol=symbol)
             return None
 
         if adx_val < self.MIN_ADX or atr_val / price < self.MIN_ATR_RATIO:
-            DebugLogger.log("filtered by ADX/ATR", symbol=symbol, adx=adx_val, atr=atr_val, price=price)
+            self.logger.log("filtered by ADX/ATR", symbol=symbol, adx=adx_val, atr=atr_val, price=price)
             return {"symbol": symbol, "signal": "hold", "strength": 0.0}
 
         confidence = min((adx_val - self.MIN_ADX) * 0.07 + 0.03, self.MAX_RISK_PCT)
-        DebugLogger.log("confidence calc", symbol=symbol, confidence=confidence, min_required=self.MIN_CONFIDENCE)
+        self.logger.log("confidence calc", symbol=symbol, confidence=confidence, min_required=self.MIN_CONFIDENCE)
 
         signal = "hold"
         if ema_fast > ema_slow and confidence >= self.MIN_CONFIDENCE:
-            DebugLogger.log("LONG TRIGGERED", symbol=symbol, price=price, ema_fast=ema_fast, ema_slow=ema_slow, confidence=confidence)
+            self.logger.log("LONG TRIGGERED", symbol=symbol, price=price, ema_fast=ema_fast, ema_slow=ema_slow, confidence=confidence)
             signal = "long"
         elif ema_fast < ema_slow and confidence >= self.MIN_CONFIDENCE:
-            DebugLogger.log("SHORT TRIGGERED", symbol=symbol, price=price, ema_fast=ema_fast, ema_slow=ema_slow, confidence=confidence)
+            self.logger.log("SHORT TRIGGERED", symbol=symbol, price=price, ema_fast=ema_fast, ema_slow=ema_slow, confidence=confidence)
             signal = "short"
         else:
-            DebugLogger.log("No entry conditions met (signal=hold)", symbol=symbol, confidence=confidence)
+            self.logger.log("No entry conditions met (signal=hold)", symbol=symbol, confidence=confidence)
         return {"symbol": symbol, "signal": signal, "strength": confidence}
 
     def get_pnl(self, snapshot=None):

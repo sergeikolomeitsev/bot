@@ -2,7 +2,6 @@
 # MAIN v9.2 — Multi-Symbol
 # ============================================================
 from debug_logger import DebugLogger
-DebugLogger.enable()
 
 import time
 from dependency_container import DependencyContainer
