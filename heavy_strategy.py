@@ -1,8 +1,9 @@
 # ============================================================
-# HEAVY STRATEGY v11.0 — TP/SL, trailing, ADX+ATR, risk/MM, комиссия
+# HEAVY STRATEGY v11.1 — TP/SL, trailing, ADX+ATR, risk/MM, комиссия, JSON-ДЕБАГ
 # ============================================================
 
 from typing import Dict, Any, List, Optional
+from debug_logger import DebugLogger
 
 class HeavyStrategy:
     INIT_STACK = 300.0
@@ -13,9 +14,9 @@ class HeavyStrategy:
     SPREAD_PCT = 0.0005
     MAX_RISK_PCT = 0.05
     MIN_RISK_PCT = 0.01
-    MIN_ADX = 10
-    MIN_ATR_RATIO = 0.0001
-    MIN_CONFIDENCE = 0.04
+    MIN_ADX = 10  # может быть уменьшен для большей агрессии
+    MIN_ATR_RATIO = 0.00005  # можно занизить/убрать для тестов
+    MIN_CONFIDENCE = 0.04  # для большей агрессии
 
     def __init__(self, portfolio, analyzer=None):
         self.portfolio = portfolio
@@ -56,84 +57,91 @@ class HeavyStrategy:
         trailing = self.TRAILING_PCT * price
         self.portfolio.open_position(symbol, price, amount, side)
         self.active_trades[symbol] = {"entry": price, "amount": amount, "side": side, "tp": tp, "sl": sl, "trailing": trailing, "extremum": price}
+        DebugLogger.log("open_position", symbol=symbol, price=price, amount=amount, side=side, confidence=confidence, tp=tp, sl=sl, trailing=trailing)
 
     def close_position(self, symbol, price):
         self.portfolio.close_position(symbol, price)
         self.active_trades.pop(symbol, None)
         self.in_market.discard(symbol)
         self.update_balance()
+        DebugLogger.log("close_position", symbol=symbol, price=price)
 
     def on_tick(self, snapshot):
         for symbol, trade in list(self.active_trades.items()):
             price = snapshot.get(symbol)
-            if not price: continue
-            # trailing update
+            if not price:
+                continue
             if trade["side"] == "long":
-                if price > trade["extremum"]: trade["extremum"] = price
+                if price > trade["extremum"]:
+                    trade["extremum"] = price
                 stop = trade["extremum"] - trade["trailing"]
                 if price <= stop or price >= trade["tp"] or price <= trade["sl"]:
                     self.close_position(symbol, price)
             else:
-                if price < trade["extremum"]: trade["extremum"] = price
+                if price < trade["extremum"]:
+                    trade["extremum"] = price
                 stop = trade["extremum"] + trade["trailing"]
                 if price >= stop or price <= trade["tp"] or price >= trade["sl"]:
                     self.close_position(symbol, price)
 
     def generate_signal(self, snapshot, symbol, history=None):
-        print(f"[RISKY DEBUG] {symbol}: generate_signal called, len(history)={len(history) if history else None}")
-
+        DebugLogger.log("generate_signal called", symbol=symbol, len_history=len(history) if history else None)
         if symbol in self.active_trades:
-            print(f"[RISKY DEBUG] {symbol}: already in active_trades, skipping.")
+            DebugLogger.log("already in active_trades", symbol=symbol)
             return None
         if not history:
-            print(f"[RISKY DEBUG] {symbol}: history is None or empty!")
+            DebugLogger.log("history is None or empty", symbol=symbol)
             return None
         if len(history) < 30:
-            print(f"[RISKY DEBUG] {symbol}: insufficient history ({len(history)} bars).")
+            DebugLogger.log("insufficient history", symbol=symbol, length=len(history))
             return None
         if not self.analyzer:
-            print(f"[RISKY DEBUG] {symbol}: analyzer is None!")
+            DebugLogger.log("analyzer is None", symbol=symbol)
             return None
 
-        highs = [bar['high'] for bar in history]
-        lows = [bar['low'] for bar in history]
+        highs  = [bar['high'] for bar in history]
+        lows   = [bar['low']  for bar in history]
         closes = [bar['close'] for bar in history]
         price = closes[-1]
 
         ema_fast = self.analyzer.ema(closes, 7)
         ema_slow = self.analyzer.ema(closes, 25)
-        adx_val = self.analyzer.adx(highs, lows, closes, 14)
-        atr_val = self.analyzer.atr(highs, lows, closes, 14)
-        rsi_val = self.analyzer.rsi(closes, 14)
+        adx_val  = self.analyzer.adx(highs, lows, closes, 14)
+        atr_val  = self.analyzer.atr(highs, lows, closes, 14)
+        rsi_val  = self.analyzer.rsi(closes, 14)
 
-        print(
-            f"[RISKY DEBUG] {symbol}: price={price}, ema_fast={ema_fast}, ema_slow={ema_slow}, adx={adx_val}, atr={atr_val}, rsi={rsi_val}"
+        DebugLogger.log(
+            "indicators",
+            symbol=symbol,
+            price=price,
+            ema_fast=ema_fast,
+            ema_slow=ema_slow,
+            adx=adx_val,
+            atr=atr_val,
+            rsi=rsi_val
         )
 
         if None in (ema_fast, ema_slow, adx_val, atr_val, rsi_val):
-            print(f"[RISKY DEBUG] {symbol}: missing indicator(s), skip.")
+            DebugLogger.log("missing indicator", symbol=symbol)
             return None
 
-        # Фильтр ADX и ATR — остался для защиты от совсем плоских рынков (можете убрать MIN_ATR_RATIO ещё ниже для ultra risk)
+        # Фильтры
         if adx_val < self.MIN_ADX or atr_val / price < self.MIN_ATR_RATIO:
-            print(f"[RISKY DEBUG] {symbol}: filtered by ADX/ATR (adx={adx_val}, atr/price={atr_val / price:.5f})")
+            DebugLogger.log("filtered by ADX/ATR", symbol=symbol, adx=adx_val, atr=atr_val, price=price)
             return {"symbol": symbol, "signal": "hold", "strength": 0.0}
 
-        # Confidence без GAP — только риск от ADX, можно усилить
         confidence = min((adx_val - self.MIN_ADX) * 0.07 + 0.03, self.MAX_RISK_PCT)
-        print(f"[RISKY DEBUG] {symbol}: confidence={confidence}, min_required={self.MIN_CONFIDENCE}")
+        DebugLogger.log("confidence calc", symbol=symbol, confidence=confidence, min_required=self.MIN_CONFIDENCE)
 
-        # Сверх рисковые условия — только кросс EMA и мягкий фильтр RSI
         signal = "hold"
-        if ema_fast > ema_slow and rsi_val < 70 and confidence >= self.MIN_CONFIDENCE:
-            print(f"[RISKY DEBUG] {symbol}: LONG TRIGGERED")
+        if ema_fast > ema_slow and confidence >= self.MIN_CONFIDENCE:
+            DebugLogger.log("LONG TRIGGERED", symbol=symbol, price=price, ema_fast=ema_fast, ema_slow=ema_slow, confidence=confidence)
             signal = "long"
-        elif ema_fast < ema_slow and rsi_val > 30 and confidence >= self.MIN_CONFIDENCE:
-            print(f"[RISKY DEBUG] {symbol}: SHORT TRIGGERED")
+        elif ema_fast < ema_slow and confidence >= self.MIN_CONFIDENCE:
+            DebugLogger.log("SHORT TRIGGERED", symbol=symbol, price=price, ema_fast=ema_fast, ema_slow=ema_slow, confidence=confidence)
             signal = "short"
         else:
-            print(f"[RISKY DEBUG] {symbol}: No entry conditions met (signal=hold).")
-
+            DebugLogger.log("No entry conditions met (signal=hold)", symbol=symbol, confidence=confidence)
         return {"symbol": symbol, "signal": signal, "strength": confidence}
 
     def get_pnl(self, snapshot=None):
