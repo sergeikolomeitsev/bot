@@ -13,9 +13,9 @@ class HeavyStrategy:
     SPREAD_PCT = 0.0005
     MAX_RISK_PCT = 0.05
     MIN_RISK_PCT = 0.01
-    MIN_ADX = 20
-    MIN_ATR_RATIO = 0.001
-    MIN_CONFIDENCE = 0.16
+    MIN_ADX = 10
+    MIN_ATR_RATIO = 0.0001
+    MIN_CONFIDENCE = 0.04
 
     def __init__(self, portfolio, analyzer=None):
         self.portfolio = portfolio
@@ -80,29 +80,60 @@ class HeavyStrategy:
                     self.close_position(symbol, price)
 
     def generate_signal(self, snapshot, symbol, history=None):
-        if symbol in self.active_trades: return None
-        if not history or len(history) < 30 or not self.analyzer: return None
-        highs  = [bar['high'] for bar in history]
-        lows   = [bar['low']  for bar in history]
+        print(f"[RISKY DEBUG] {symbol}: generate_signal called, len(history)={len(history) if history else None}")
+
+        if symbol in self.active_trades:
+            print(f"[RISKY DEBUG] {symbol}: already in active_trades, skipping.")
+            return None
+        if not history:
+            print(f"[RISKY DEBUG] {symbol}: history is None or empty!")
+            return None
+        if len(history) < 30:
+            print(f"[RISKY DEBUG] {symbol}: insufficient history ({len(history)} bars).")
+            return None
+        if not self.analyzer:
+            print(f"[RISKY DEBUG] {symbol}: analyzer is None!")
+            return None
+
+        highs = [bar['high'] for bar in history]
+        lows = [bar['low'] for bar in history]
         closes = [bar['close'] for bar in history]
         price = closes[-1]
+
         ema_fast = self.analyzer.ema(closes, 7)
         ema_slow = self.analyzer.ema(closes, 25)
-        adx_val  = self.analyzer.adx(highs, lows, closes, 14)
-        atr_val  = self.analyzer.atr(highs, lows, closes, 14)
-        gap_val  = self.analyzer.gap(closes)
-        rsi_val  = self.analyzer.rsi(closes, 14)
-        if None in (ema_fast, ema_slow, adx_val, atr_val, gap_val, rsi_val): return None
-        # Фильтр по adx и atr
+        adx_val = self.analyzer.adx(highs, lows, closes, 14)
+        atr_val = self.analyzer.atr(highs, lows, closes, 14)
+        rsi_val = self.analyzer.rsi(closes, 14)
+
+        print(
+            f"[RISKY DEBUG] {symbol}: price={price}, ema_fast={ema_fast}, ema_slow={ema_slow}, adx={adx_val}, atr={atr_val}, rsi={rsi_val}"
+        )
+
+        if None in (ema_fast, ema_slow, adx_val, atr_val, rsi_val):
+            print(f"[RISKY DEBUG] {symbol}: missing indicator(s), skip.")
+            return None
+
+        # Фильтр ADX и ATR — остался для защиты от совсем плоских рынков (можете убрать MIN_ATR_RATIO ещё ниже для ultra risk)
         if adx_val < self.MIN_ADX or atr_val / price < self.MIN_ATR_RATIO:
+            print(f"[RISKY DEBUG] {symbol}: filtered by ADX/ATR (adx={adx_val}, atr/price={atr_val / price:.5f})")
             return {"symbol": symbol, "signal": "hold", "strength": 0.0}
-        # Confidence = динамический вес риска
-        confidence = min(abs(gap_val)*1.1 + (adx_val-self.MIN_ADX)*0.04, self.MAX_RISK_PCT)
+
+        # Confidence без GAP — только риск от ADX, можно усилить
+        confidence = min((adx_val - self.MIN_ADX) * 0.07 + 0.03, self.MAX_RISK_PCT)
+        print(f"[RISKY DEBUG] {symbol}: confidence={confidence}, min_required={self.MIN_CONFIDENCE}")
+
+        # Сверх рисковые условия — только кросс EMA и мягкий фильтр RSI
         signal = "hold"
-        if ema_fast > ema_slow and gap_val > 0 and rsi_val < 65 and confidence >= self.MIN_CONFIDENCE:
+        if ema_fast > ema_slow and rsi_val < 70 and confidence >= self.MIN_CONFIDENCE:
+            print(f"[RISKY DEBUG] {symbol}: LONG TRIGGERED")
             signal = "long"
-        elif ema_fast < ema_slow and gap_val < 0 and rsi_val > 38 and confidence >= self.MIN_CONFIDENCE:
+        elif ema_fast < ema_slow and rsi_val > 30 and confidence >= self.MIN_CONFIDENCE:
+            print(f"[RISKY DEBUG] {symbol}: SHORT TRIGGERED")
             signal = "short"
+        else:
+            print(f"[RISKY DEBUG] {symbol}: No entry conditions met (signal=hold).")
+
         return {"symbol": symbol, "signal": signal, "strength": confidence}
 
     def get_pnl(self, snapshot=None):

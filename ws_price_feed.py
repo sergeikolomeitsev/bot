@@ -24,7 +24,7 @@ class WSPriceFeed:
         self._ohlc_history = {sym: [] for sym in self.monitored_symbols}
         self.max_history = 1000
         self.last_update = None
-        self.dead_interval = 20
+        self.dead_interval = 60
         self.ws_url = "ws://146.190.89.166:8765/relay"
         self.thread = threading.Thread(target=self._run, daemon=True)
         self.thread.start()
@@ -35,7 +35,9 @@ class WSPriceFeed:
     def is_alive(self):
         if self.last_update is None:
             return False
-        return (time.time() - self.last_update) < self.dead_interval
+        seconds_since = time.time() - self.last_update
+        alive = seconds_since < self.dead_interval
+        return alive
 
     def get_ohlc_history(self, symbol, depth=500):
         return self._ohlc_history.get(symbol, [])[-depth:]
@@ -80,6 +82,7 @@ class WSPriceFeed:
 
     def on_message(self, ws, message):
         data = json.loads(message)
+        bars = data.get("data", [])
         topic = data.get("topic", "")
         if data.get("type") in ["snapshot", "update"] and topic.startswith("kline.1."):
             symbol = topic.split(".")[-1]

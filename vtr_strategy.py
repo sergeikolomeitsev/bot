@@ -14,8 +14,8 @@ class VTRStrategy:
     MAX_RISK_PCT = 0.05
     MIN_RISK_PCT = 0.01
     MIN_ADX = 20
-    MIN_ATR_RATIO = 0.001
-    MIN_CONFIDENCE = 0.16
+    MIN_ATR_RATIO = 0.0001
+    MIN_CONFIDENCE = 0.04
 
     def __init__(self, portfolio, risk=1.0, analyzer=None):
         self.portfolio = portfolio
@@ -80,29 +80,61 @@ class VTRStrategy:
                     self.close_position(symbol, price)
 
     def generate_signal(self, snapshot, symbol, history=None):
-        if symbol in self.active_trades: return None
-        if not history or len(history) < 30 or not self.analyzer: return None
-        highs  = [bar['high'] for bar in history]
-        lows   = [bar['low']  for bar in history]
+        print(f"[STRATEGY DEBUG] {symbol}: generate_signal called, len(history)={len(history) if history else None}")
+
+        if symbol in self.active_trades:
+            print(f"[STRATEGY DEBUG] {symbol}: already in active_trades, skipping.")
+            return None
+        if not history:
+            print(f"[STRATEGY DEBUG] {symbol}: history is None or empty!")
+            return None
+        if len(history) < 30:
+            print(f"[STRATEGY DEBUG] {symbol}: insufficient history ({len(history)} bars).")
+            return None
+        if not self.analyzer:
+            print(f"[STRATEGY DEBUG] {symbol}: analyzer is None!")
+            return None
+
+        highs = [bar['high'] for bar in history]
+        lows = [bar['low'] for bar in history]
         closes = [bar['close'] for bar in history]
         price = closes[-1]
+        print(f"[STRATEGY DEBUG] {symbol}: price={price} closes={closes[-3:]}")
+
         ema_fast = self.analyzer.ema(closes, 7)
         ema_slow = self.analyzer.ema(closes, 25)
-        adx_val  = self.analyzer.adx(highs, lows, closes, 14)
-        atr_val  = self.analyzer.atr(highs, lows, closes, 14)
-        gap_val  = self.analyzer.gap(closes)
-        rsi_val  = self.analyzer.rsi(closes, 14)
-        if None in (ema_fast, ema_slow, adx_val, atr_val, gap_val, rsi_val): return None
+        adx_val = self.analyzer.adx(highs, lows, closes, 14)
+        atr_val = self.analyzer.atr(highs, lows, closes, 14)
+        gap_val = self.analyzer.gap(closes)
+        rsi_val = self.analyzer.rsi(closes, 14)
+
+        print(f"[STRATEGY DEBUG] {symbol}: ema_fast={ema_fast}, ema_slow={ema_slow}")
+        print(f"[STRATEGY DEBUG] {symbol}: adx={adx_val}, atr={atr_val}, gap={gap_val}, rsi={rsi_val}")
+
+        if None in (ema_fast, ema_slow, adx_val, atr_val, gap_val, rsi_val):
+            print(f"[STRATEGY DEBUG] {symbol}: missing indicator value(s), skipping.")
+            return None
+
         # Фильтр по adx и atr
         if adx_val < self.MIN_ADX or atr_val / price < self.MIN_ATR_RATIO:
+            print(
+                f"[STRATEGY DEBUG] {symbol}: filtered (adx {adx_val} < {self.MIN_ADX} or atr/price {atr_val / price:.5f} < {self.MIN_ATR_RATIO})")
             return {"symbol": symbol, "signal": "hold", "strength": 0.0}
+
         # Confidence = динамический вес риска
-        confidence = min(abs(gap_val)*1.1 + (adx_val-self.MIN_ADX)*0.04, self.MAX_RISK_PCT)
+        confidence = min(abs(gap_val) * 1.1 + (adx_val - self.MIN_ADX) * 0.04, self.MAX_RISK_PCT)
+        print(f"[STRATEGY DEBUG] {symbol}: confidence={confidence}, min_required={self.MIN_CONFIDENCE}")
+
         signal = "hold"
         if ema_fast > ema_slow and gap_val > 0 and rsi_val < 65 and confidence >= self.MIN_CONFIDENCE:
+            print(f"[STRATEGY DEBUG] {symbol}: LONG conditions met.")
             signal = "long"
         elif ema_fast < ema_slow and gap_val < 0 and rsi_val > 38 and confidence >= self.MIN_CONFIDENCE:
+            print(f"[STRATEGY DEBUG] {symbol}: SHORT conditions met.")
             signal = "short"
+        else:
+            print(f"[STRATEGY DEBUG] {symbol}: No entry conditions met (signal=hold).")
+
         return {"symbol": symbol, "signal": signal, "strength": confidence}
 
     def get_pnl(self, snapshot=None):
