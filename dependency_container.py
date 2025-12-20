@@ -112,7 +112,8 @@ class DependencyContainer:
             self.ab_engine,
             self.telegram_bot,
             self.heartbeat,
-            self.market_data
+            self.market_data,
+            self.analyzer  # Передача analyzer
         )
 
         print("[DEBUG] DependencyContainer initialization complete.")

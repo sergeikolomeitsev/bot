@@ -89,32 +89,40 @@ class WSPriceFeed:
             # Только для отслеживаемых монет
             if symbol not in self.monitored_symbols:
                 return
-            bars = data.get("data", [])
-            for bar in bars:
-                ohlc = {
-                    "open": float(bar["open"]),
-                    "high": float(bar["high"]),
-                    "low": float(bar["low"]),
-                    "close": float(bar["close"]),
-                    "volume": float(bar.get("volume", 0.0)),
-                    "start": bar.get("start"),
-                    "end": bar.get("end"),
-                    "confirm": bar.get("confirm", False),
-                    "timestamp": bar.get("timestamp")
-                }
-                # Не допускаем дубликатов по start
-                if self._ohlc_history[symbol] and bar.get("start"):
-                    if self._ohlc_history[symbol][-1].get("start") == bar.get("start"):
-                        self._ohlc_history[symbol][-1] = ohlc
+
+            ohlc = None  # Определяем ohlc заранее, чтобы избежать ошибки
+
+            # Проверяем, есть ли данные в 'bars'
+            if bars:
+                for bar in bars:
+                    ohlc = {
+                        "open": float(bar["open"]),
+                        "high": float(bar["high"]),
+                        "low": float(bar["low"]),
+                        "close": float(bar["close"]),
+                        "volume": float(bar.get("volume", 0.0)),
+                        "start": bar.get("start"),
+                        "end": bar.get("end"),
+                        "confirm": bar.get("confirm", False),
+                        "timestamp": bar.get("timestamp")
+                    }
+                    # Не допускаем дубликатов по start
+                    if self._ohlc_history[symbol] and bar.get("start"):
+                        if self._ohlc_history[symbol][-1].get("start") == bar.get("start"):
+                            self._ohlc_history[symbol][-1] = ohlc
+                        else:
+                            self._ohlc_history[symbol].append(ohlc)
                     else:
                         self._ohlc_history[symbol].append(ohlc)
-                else:
-                    self._ohlc_history[symbol].append(ohlc)
-                if len(self._ohlc_history[symbol]) > self.max_history:
-                    self._ohlc_history[symbol].pop(0)
-            # Price для snapshot
-            self.prices[symbol] = ohlc["close"]
-            self.last_update = time.time()
+                    if len(self._ohlc_history[symbol]) > self.max_history:
+                        self._ohlc_history[symbol].pop(0)
+
+            if ohlc:  # Проверяем, что ohlc был установлен в цикле
+                self.prices[symbol] = ohlc["close"]
+                self.last_update = time.time()
+            else:
+                # Лог предупреждения, если bars пуст или нет ohlc
+                self.logger.warning(f"No valid OHLC data for symbol {symbol}. Prices not updated.")
 
     def _on_error(self, ws, error):
         self.logger.error(f"[WS ERROR] {error}")

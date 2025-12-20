@@ -13,7 +13,6 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from datetime import timedelta
 
 # ------------------------------------------------------------
 # LOAD .env (если присутствует)
@@ -81,6 +80,7 @@ class LoggingSettings:
 @dataclass
 class WSSettings:
     url_main = "ws://<your-server-ip>:8765/relay"
+    url_test = "ws://<your-server-ip>:8765/test-relay"  # Добавлена строка
 
 
 # ============================================================
@@ -109,5 +109,6 @@ class Config:
         Только так твой новый WSPriceFeed будет работать корректно.
         """
         return self.ws.url_test if self.api.use_testnet else self.ws.url_main
+
 
 config = Config()

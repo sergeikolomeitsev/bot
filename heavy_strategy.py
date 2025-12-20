@@ -3,7 +3,6 @@
 # индивидуальный JSON-логгер (стратегии) + ДЕБАГ-ЛОГГЕР портфельных операций
 # ============================================================
 
-from typing import Dict, Any, List, Optional
 from debug_logger import DebugLogger
 
 class HeavyStrategy:

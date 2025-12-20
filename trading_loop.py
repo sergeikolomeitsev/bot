@@ -12,7 +12,6 @@ import logging
 from ab_testing_engine import ABTestingEngine
 from ws_price_feed import WSPriceFeed
 from config import config
-from market_data_manager import MarketDataManager  # АККУРАТНО добавлен импорт
 
 logger = logging.getLogger("TradingLoop")
 
@@ -22,10 +21,11 @@ class TradingLoop:
                  ab_engine=None,
                  telegram_bot=None,
                  heartbeat=None,
-                 market_data=None):
+                 market_data=None,
+                 analyzer=None):
         self.config = config
         self.price_feed = WSPriceFeed(config)
-        self.ab_engine = ab_engine if ab_engine is not None else ABTestingEngine(config, initial_balance=300)
+        self.ab_engine = ab_engine if ab_engine is not None else ABTestingEngine(config, analyzer=analyzer, initial_balance=300)
         self.telegram_bot = telegram_bot
         self.heartbeat = heartbeat
         self.market_data = market_data

@@ -20,9 +20,8 @@ class TradingOrchestrator:
     def __init__(self, config, di_container):
         self.cfg = config
         self.di = di_container
-        self.loop = di_container.get_loop()
+        self.loop = di_container.trading_loop
         self.bot = di_container.telegram_bot
-
         self.logger = logging.getLogger("Orchestrator")
 
     # ------------------------------------------------------------
@@ -54,7 +53,7 @@ class TradingOrchestrator:
         while True:
             try:
                 print(f"[{datetime.now()}] ⏳ Сборка heartbeat summary...")
-                summary = self.di.build_heartbeat_summary()
+                summary = self.di.heartbeat.build()  # Исправлено: использование HeartbeatBuilder
                 print(f"[{datetime.now()}] ✅ Сформирован heartbeat summary:\n{summary}")
 
                 print(f"[{datetime.now()}] 📤 Отправка heartbeat в Telegram...")
