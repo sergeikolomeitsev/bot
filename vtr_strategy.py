@@ -31,30 +31,46 @@ class VTRStrategy:
         self.in_market = set()
         self.last_signals = {}
 
+        self.logger.log("strategy_initialized", balance=self.balance, active_trades=self.active_trades)
+
     @property
     def positions(self):
+        self.logger.log("positions_requested")
         return self.portfolio.positions
 
     @property
     def trades(self):
+        self.logger.log("trades_requested")
         return self.portfolio.trades
 
     def update_balance(self):
+        self.logger.log("update_balance_called", current_balance=self.balance, init_stack=self.INIT_STACK)
+        if not hasattr(self.portfolio, "trades"):
+            self.logger.log("invalid_portfolio_object", error="No 'trades' attribute in portfolio")
+            raise ValueError("Portfolio object does not have 'trades' attribute.")
+        self.logger.log("portfolio_trades_details", trades=self.portfolio.trades)
         self.balance = self.INIT_STACK + sum([t.get("pnl", 0) for t in self.portfolio.trades])
+        self.logger.log("update_balance_completed", updated_balance=self.balance)
 
     def can_trade(self):
+        self.logger.log("can_trade_called", current_balance=self.balance, required_balance=self.INIT_STACK, active_trades=self.active_trades)
         self.update_balance()
-        return self.balance >= self.INIT_STACK
+        can_trade_result = self.balance >= self.INIT_STACK
+        self.portfolio_logger.log("can_trade_result", balance=self.balance, can_trade=can_trade_result, active_trades=self.active_trades)
+        return can_trade_result
 
     def get_trade_amount(self, price, confidence):
         stack = max(self.balance, self.INIT_STACK)
         pct = max(self.MIN_RISK_PCT, min(confidence, self.MAX_RISK_PCT))
         usdt = stack * pct
-        return max(round(usdt / price, 6), 0.0001)
+        trade_amount = max(round(usdt / price, 6), 0.0001)
+        self.logger.log("trade_amount_calculated", price=price, confidence=confidence, trade_amount=trade_amount, balance=self.balance)
+        return trade_amount
 
     def open_position(self, symbol, price, confidence, side):
+        self.portfolio_logger.log("open_position_attempt", symbol=symbol, price=price, confidence=confidence, side=side)
         if not self.can_trade():
-            self.portfolio_logger.log("open_position_blocked", symbol=symbol, reason="cant_trade", balance=self.balance)
+            self.portfolio_logger.log("open_position_blocked", symbol=symbol, reason="can_trade_returned_false", balance=self.balance, active_trades=self.active_trades)
             return
         if symbol in self.active_trades:
             self.portfolio_logger.log("open_position_blocked", symbol=symbol, reason="already_active", active_trades=list(self.active_trades.keys()))
@@ -64,59 +80,71 @@ class VTRStrategy:
         tp = price * (1 + self.TAKE_PROFIT_PCT - fee) if side == "long" else price * (1 - self.TAKE_PROFIT_PCT + fee)
         sl = price * (1 - self.STOP_LOSS_PCT - fee) if side == "long" else price * (1 + self.STOP_LOSS_PCT + fee)
         trailing = self.TRAILING_PCT * price
+
+        self.portfolio_logger.log("open_position_details", amount=amount, tp=tp, sl=sl, trailing=trailing)
         self.portfolio.open_position(symbol, price, amount, side)
-        self.active_trades[symbol] = {"entry": price, "amount": amount, "side": side, "tp": tp, "sl": sl, "trailing": trailing, "extremum": price}
-        self.portfolio_logger.log(
-            "open_position_success",
-            symbol=symbol, price=price, amount=amount, side=side,
-            confidence=confidence, tp=tp, sl=sl, trailing=trailing
-        )
+        self.active_trades[symbol] = {
+            "entry": price,
+            "amount": amount,
+            "side": side,
+            "tp": tp,
+            "sl": sl,
+            "trailing": trailing,
+            "extremum": price,
+        }
+        self.portfolio_logger.log("open_position_success", symbol=symbol, price=price, amount=amount, side=side, confidence=confidence, tp=tp, sl=sl, trailing=trailing)
 
     def close_position(self, symbol, price):
+        self.portfolio_logger.log("close_position_attempt", symbol=symbol, price=price)
         if symbol not in self.active_trades:
-            self.portfolio_logger.log("close_position_blocked", symbol=symbol, reason="not_active")
+            self.portfolio_logger.log("close_position_blocked", symbol=symbol, reason="not_active", active_trades=self.active_trades)
+            return
         self.portfolio.close_position(symbol, price)
         self.active_trades.pop(symbol, None)
         self.in_market.discard(symbol)
         self.update_balance()
-        self.portfolio_logger.log("close_position_success", symbol=symbol, price=price)
+        self.portfolio_logger.log("close_position_success", symbol=symbol, price=price, balance=self.balance)
 
     def on_tick(self, snapshot):
+        self.logger.log("on_tick_called", snapshot=snapshot, active_trades=self.active_trades)
         for symbol, trade in list(self.active_trades.items()):
             price = snapshot.get(symbol)
             if not price:
+                self.logger.log("on_tick_price_missing", symbol=symbol)
                 continue
             if trade["side"] == "long":
                 if price > trade["extremum"]:
                     trade["extremum"] = price
                 stop = trade["extremum"] - trade["trailing"]
+                self.logger.log("on_tick_long_trade_evaluated", symbol=symbol, price=price, stop=stop, tp=trade["tp"], sl=trade["sl"])
                 if price <= stop or price >= trade["tp"] or price <= trade["sl"]:
                     self.close_position(symbol, price)
             else:
                 if price < trade["extremum"]:
                     trade["extremum"] = price
                 stop = trade["extremum"] + trade["trailing"]
+                self.logger.log("on_tick_short_trade_evaluated", symbol=symbol, price=price, stop=stop, tp=trade["tp"], sl=trade["sl"])
                 if price >= stop or price <= trade["tp"] or price >= trade["sl"]:
                     self.close_position(symbol, price)
 
     def generate_signal(self, snapshot, symbol, history=None):
-        self.logger.log("generate_signal called", symbol=symbol, len_history=len(history) if history else None)
+        self.logger.log("generate_signal_called", symbol=symbol, len_history=(len(history) if history else None))
         if symbol in self.active_trades:
-            self.logger.log("already in active_trades", symbol=symbol)
+            self.logger.log("generate_signal_skipped", reason="already_active", symbol=symbol)
             return None
         if not history:
-            self.logger.log("history is None or empty", symbol=symbol)
+            self.logger.log("generate_signal_skipped", reason="history_missing", symbol=symbol)
             return None
         if len(history) < 30:
-            self.logger.log("insufficient history", symbol=symbol, length=len(history))
+            self.logger.log("generate_signal_skipped", reason="insufficient_history", symbol=symbol, history_length=len(history))
             return None
         if not self.analyzer:
-            self.logger.log("analyzer is None", symbol=symbol)
+            self.logger.log("generate_signal_skipped", reason="no_analyzer", symbol=symbol)
             return None
 
-        highs = [bar['high'] for bar in history]
-        lows = [bar['low'] for bar in history]
-        closes = [bar['close'] for bar in history]
+        highs = [bar["high"] for bar in history]
+        lows = [bar["low"] for bar in history]
+        closes = [bar["close"] for bar in history]
         price = closes[-1]
 
         ema_fast = self.analyzer.ema(closes, 7)
@@ -125,43 +153,34 @@ class VTRStrategy:
         atr_val = self.analyzer.atr(highs, lows, closes, 14)
         rsi_val = self.analyzer.rsi(closes, 14)
 
-        self.logger.log(
-            "indicators",
-            symbol=symbol,
-            price=price,
-            ema_fast=ema_fast,
-            ema_slow=ema_slow,
-            adx=adx_val,
-            atr=atr_val,
-            rsi=rsi_val
-        )
+        self.logger.log("indicators_calculated", symbol=symbol, price=price, ema_fast=ema_fast, ema_slow=ema_slow, adx=adx_val, atr=atr_val, rsi=rsi_val)
 
         if None in (ema_fast, ema_slow, adx_val, atr_val, rsi_val):
-            self.logger.log("missing indicator", symbol=symbol)
+            self.logger.log("missing_indicators", symbol=symbol)
             return None
 
         if adx_val < self.MIN_ADX or atr_val / price < self.MIN_ATR_RATIO:
-            self.logger.log("filtered by ADX/ATR", symbol=symbol, adx=adx_val, atr=atr_val, price=price)
+            self.logger.log("filter_failed", symbol=symbol, adx=adx_val, atr=atr_val, price=price)
             return {"symbol": symbol, "signal": "hold", "strength": 0.0}
 
         confidence = min((adx_val - self.MIN_ADX) * 0.07 + 0.03, self.MAX_RISK_PCT)
-        self.logger.log("confidence calc", symbol=symbol, confidence=confidence, min_required=self.MIN_CONFIDENCE)
+        self.logger.log("confidence_calculated", symbol=symbol, confidence=confidence, min_confidence=self.MIN_CONFIDENCE)
 
         signal = "hold"
         if ema_fast > ema_slow and confidence >= self.MIN_CONFIDENCE:
-            self.logger.log("LONG TRIGGERED", symbol=symbol, price=price, ema_fast=ema_fast, ema_slow=ema_slow,
-                            confidence=confidence)
+            self.logger.log("long_signal", symbol=symbol, price=price, confidence=confidence)
             signal = "long"
         elif ema_fast < ema_slow and confidence >= self.MIN_CONFIDENCE:
-            self.logger.log("SHORT TRIGGERED", symbol=symbol, price=price, ema_fast=ema_fast, ema_slow=ema_slow,
-                            confidence=confidence)
+            self.logger.log("short_signal", symbol=symbol, price=price, confidence=confidence)
             signal = "short"
         else:
-            self.logger.log("No entry conditions met (signal=hold)", symbol=symbol, confidence=confidence)
+            self.logger.log("signal_hold", symbol=symbol, confidence=confidence)
+        self.logger.log("generate_signal_result", symbol=symbol, signal=signal, confidence=confidence)
+
         return {"symbol": symbol, "signal": signal, "strength": confidence}
 
     def get_pnl(self, snapshot=None):
-        realized = sum([t.get('pnl', 0) for t in self.trades])
+        realized = sum([t.get("pnl", 0) for t in self.trades])
         unrealized = 0
         if snapshot:
             for sym, pos in self.positions.items():
@@ -174,4 +193,5 @@ class VTRStrategy:
                         unrealized += (price - entry) * size
                     else:
                         unrealized += (entry - price) * size
-        return {'realized': realized, 'unrealized': unrealized}
+        self.logger.log("get_pnl_called", realized=realized, unrealized=unrealized)
+        return {"realized": realized, "unrealized": unrealized}

@@ -39,11 +39,17 @@ class HeavyStrategy:
         return self.portfolio.trades
 
     def update_balance(self):
+        if not hasattr(self.portfolio, "trades"):
+            self.logger.log("Invalid portfolio object", details={"error": "No 'trades' attribute in portfolio"})
+            raise ValueError("Portfolio object does not have 'trades' attribute.")
         self.balance = self.INIT_STACK + sum([t.get("pnl",0) for t in self.portfolio.trades])
 
     def can_trade(self):
         self.update_balance()
-        return self.balance >= self.INIT_STACK
+        can_trade_result = self.balance >= self.INIT_STACK
+        # Логирование результата can_trade
+        self.portfolio_logger.log("can_trade_called", balance=self.balance, can_trade=can_trade_result)
+        return can_trade_result
 
     def get_trade_amount(self, price, confidence):
         stack = max(self.balance, self.INIT_STACK)
