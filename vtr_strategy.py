@@ -126,9 +126,16 @@ class VTRStrategy:
                 self.logger.log("on_tick_short_trade_evaluated", symbol=symbol, price=price, stop=stop, tp=trade["tp"], sl=trade["sl"])
                 if price >= stop or price <= trade["tp"] or price >= trade["sl"]:
                     self.close_position(symbol, price)
+            # Генерация сигналов для новых символов
+        for symbol, price in snapshot.items():
+            if symbol not in self.active_trades:
+                signal = self.generate_signal(snapshot, symbol, history=None)
+                if signal and signal["signal"] in {"long", "short"}:
+                    self.open_position(symbol, price, signal["strength"], signal["signal"])
 
     def generate_signal(self, snapshot, symbol, history=None):
-        self.logger.log("generate_signal_called", symbol=symbol, len_history=(len(history) if history else None))
+        history = history if history is not None else []
+        self.logger.log("generate_signal_called", symbol=symbol, len_history=len(history))
         if symbol in self.active_trades:
             self.logger.log("generate_signal_skipped", reason="already_active", symbol=symbol)
             return None
@@ -136,7 +143,8 @@ class VTRStrategy:
             self.logger.log("generate_signal_skipped", reason="history_missing", symbol=symbol)
             return None
         if len(history) < 30:
-            self.logger.log("generate_signal_skipped", reason="insufficient_history", symbol=symbol, history_length=len(history))
+            self.logger.log("generate_signal_skipped", reason="insufficient_history", symbol=symbol,
+                            history_length=len(history))
             return None
         if not self.analyzer:
             self.logger.log("generate_signal_skipped", reason="no_analyzer", symbol=symbol)
