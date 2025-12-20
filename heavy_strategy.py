@@ -1,5 +1,6 @@
 # ============================================================
-# HEAVY STRATEGY v11.2 — TP/SL, trailing, ADX+ATR, risk/MM, комиссия, индивидуальный JSON-логгер
+# HEAVY STRATEGY v11.3 — TP/SL, trailing, ADX+ATR, risk/MM, комиссия,
+# индивидуальный JSON-логгер (стратегии) + ДЕБАГ-ЛОГГЕР портфельных операций
 # ============================================================
 
 from typing import Dict, Any, List, Optional
@@ -19,9 +20,10 @@ class HeavyStrategy:
     MIN_CONFIDENCE = 0.04
 
     def __init__(self, portfolio, analyzer=None):
-        self.logger = DebugLogger("heavy_strategy_debug.json")
+        self.logger = DebugLogger("heavy_strategy_debug.json", max_records=10000)
         self.logger.enable()
-
+        self.portfolio_logger = DebugLogger("heavy_portfolio_debug.json", max_records=10000)
+        self.portfolio_logger.enable()
         self.portfolio = portfolio
         self.analyzer = analyzer
         self.active_trades = {}
@@ -51,8 +53,12 @@ class HeavyStrategy:
         return max(round(usdt/price, 6), 0.0001)
 
     def open_position(self, symbol, price, confidence, side):
-        if not self.can_trade(): return
-        if symbol in self.active_trades: return
+        if not self.can_trade():
+            self.portfolio_logger.log("open_position_blocked", symbol=symbol, reason="cant_trade", balance=self.balance)
+            return
+        if symbol in self.active_trades:
+            self.portfolio_logger.log("open_position_blocked", symbol=symbol, reason="already_active", active_trades=list(self.active_trades.keys()))
+            return
         amount = self.get_trade_amount(price, confidence)
         fee = self.FEE_PCT + self.SPREAD_PCT
         tp  = price * (1 + self.TAKE_PROFIT_PCT - fee) if side=="long" else price * (1 - self.TAKE_PROFIT_PCT + fee)
@@ -60,14 +66,20 @@ class HeavyStrategy:
         trailing = self.TRAILING_PCT * price
         self.portfolio.open_position(symbol, price, amount, side)
         self.active_trades[symbol] = {"entry": price, "amount": amount, "side": side, "tp": tp, "sl": sl, "trailing": trailing, "extremum": price}
-        self.logger.log("open_position", symbol=symbol, price=price, amount=amount, side=side, confidence=confidence, tp=tp, sl=sl, trailing=trailing)
+        self.portfolio_logger.log(
+            "open_position_success",
+            symbol=symbol, price=price, amount=amount, side=side,
+            confidence=confidence, tp=tp, sl=sl, trailing=trailing
+        )
 
     def close_position(self, symbol, price):
+        if symbol not in self.active_trades:
+            self.portfolio_logger.log("close_position_blocked", symbol=symbol, reason="not_active")
         self.portfolio.close_position(symbol, price)
         self.active_trades.pop(symbol, None)
         self.in_market.discard(symbol)
         self.update_balance()
-        self.logger.log("close_position", symbol=symbol, price=price)
+        self.portfolio_logger.log("close_position_success", symbol=symbol, price=price)
 
     def on_tick(self, snapshot):
         for symbol, trade in list(self.active_trades.items()):
