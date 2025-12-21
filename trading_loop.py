@@ -17,21 +17,30 @@ logger = logging.getLogger("TradingLoop")
 
 class TradingLoop:
     def __init__(self,
-                 config=config,
-                 ab_engine=None,
+                 config,
+                 ab_engine,         # ← больше нет значения по умолчанию!
                  telegram_bot=None,
                  heartbeat=None,
                  market_data=None,
                  analyzer=None):
         self.config = config
         self.price_feed = WSPriceFeed(config)
-        self.ab_engine = ab_engine if ab_engine is not None else ABTestingEngine(config, analyzer=analyzer, initial_balance=300)
+        if ab_engine is None:
+            raise ValueError("TradingLoop должен быть инициализирован с существующим ab_engine! (DI)")
+        self.ab_engine = ab_engine  # <-- только через DI!
         self.telegram_bot = telegram_bot
         self.heartbeat = heartbeat
         self.market_data = market_data
 
     def run(self):
         logger.info("== TRADING LOOP v11.2: STARTED — Parallel AB test ==")
+        try:
+            print("[DEBUG] TradingLoop VTRStrategy id:", id(self.ab_engine.experimental_strategy))
+            print("[DEBUG] TradingLoop Portfolio id:", id(self.ab_engine.experimental_strategy.portfolio))
+            print("[DEBUG] TradingLoop HeavyStrategy id:", id(self.ab_engine.baseline_strategy))
+            print("[DEBUG] TradingLoop Portfolio (baseline) id:", id(self.ab_engine.baseline_strategy.portfolio))
+        except Exception as e:
+            print("[DEBUG] TradingLoop id print error:", e)
         dead_feed_alerted = False
         last_heartbeat = 0
 

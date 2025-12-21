@@ -14,13 +14,10 @@ REPORT_HOURS = list(range(8, 23))
 HISTORY_PATH = 'ab_history.json'
 
 class ABTestingEngine:
-    def __init__(self, config, analyzer, initial_balance=300,
-                 portfolio_baseline=None, portfolio_experiment=None):
-        self.freedom_manager = FreedomManager(config=config, ai_manager=None)
-        self.manager = AIStrategyManager(
-            self.freedom_manager, config, analyzer=analyzer, initial_balance=initial_balance,
-            portfolio_baseline=portfolio_baseline, portfolio_experiment=portfolio_experiment
-        )
+    def __init__(self, manager: AIStrategyManager):
+        self.manager = manager
+        self.baseline_strategy = self.manager.baseline_strategy
+        self.experimental_strategy = self.manager.experimental_strategy
         self.last_hour = None
         self.last_report_date = None
         self.load_history()

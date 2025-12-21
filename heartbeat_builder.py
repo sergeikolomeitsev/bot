@@ -11,6 +11,11 @@ class HeartbeatBuilder:
         self.cfg = di.config
 
     def build(self):
+        print("[DEBUG] HB VTRStrategy id:", id(self.experimental_strategy))
+        print("[DEBUG] HB Portfolio id:", id(self.experimental_strategy.portfolio))
+        # Для baseline тоже, если нужно:
+        print("[DEBUG] HB HeavyStrategy id:", id(self.baseline_strategy))
+        print("[DEBUG] HB Portfolio (baseline) id:", id(self.baseline_strategy.portfolio))
         out = []
         out.append("❤️ HEARTBEAT v11.3 — PARALLEL AB TEST\n")
 

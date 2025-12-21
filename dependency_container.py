@@ -50,13 +50,10 @@ class DependencyContainer:
         # CYCLIC DEPS: FREEDOM MANAGER <-> AI STRATEGY MANAGER
         # ------------------------------------------------------------
         self.freedom_manager = FreedomManager(self.config, None)
-        print("[DEBUG] DependencyContainer: self.analyzer before manager =", repr(self.analyzer), type(self.analyzer))
         self.ai_manager = AIStrategyManager(
             self.freedom_manager,
             self.config,
-            self.analyzer,
-            portfolio_baseline=None,      # portfolio создаётся внутри самого менеджера!
-            portfolio_experiment=None
+            self.analyzer
         )
         self.freedom_manager.set_ai_manager(self.ai_manager)
 
@@ -74,10 +71,7 @@ class DependencyContainer:
         # AB TESTING ENGINE (заводится на тот же портфель если нужно сравнение)
         # ------------------------------------------------------------
         self.ab_engine = ABTestingEngine(
-            self.config, self.analyzer, initial_balance=300,
-            # Передача None (пусть тест создает сам или не мешает production портфелям)
-            portfolio_baseline=None,
-            portfolio_experiment=None
+            manager=self.ai_manager
         )
 
         # ------------------------------------------------------------
@@ -117,3 +111,5 @@ class DependencyContainer:
         )
 
         print("[DEBUG] DependencyContainer initialization complete.")
+        print("[DEBUG] DI VTRStrategy id:", id(self.ai_manager.experimental_strategy))
+        print("[DEBUG] DI Portfolio id:", id(self.ai_manager.experimental_strategy.portfolio))

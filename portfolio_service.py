@@ -8,6 +8,8 @@ import json
 
 class PortfolioService:
     def __init__(self, config, path: Optional[str] = None):
+        print("[DEBUG] PortfolioService created! id:", id(self))
+
         self.cfg = config
         self.positions: Dict[str, Dict[str, Any]] = {}
         self.realized_pnl: float = 0.0

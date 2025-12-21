@@ -1,90 +1,69 @@
 {
-  "positions": {},
-  "realized_pnl": -0.14408393284999957,
-  "trades": [
-    {
-      "symbol": "AVAXUSDT",
-      "entry_price": 12.28,
-      "close_price": 12.25,
-      "amount": 1.221498,
-      "side": "long",
-      "pnl": -0.03664493999999922,
-      "tp": 12.314383999999999,
-      "sl": 12.240704,
-      "trailing_extremum": 0.02456,
-      "close_time": "2025-12-21T02:15:47.877918"
-    },
-    {
-      "symbol": "DOGEUSDT",
-      "entry_price": 0.1323,
-      "close_price": 0.13217,
-      "amount": 113.378685,
-      "side": "long",
-      "pnl": -0.014739229049999006,
-      "tp": 0.13267044,
-      "sl": 0.13187664000000002,
-      "trailing_extremum": 0.0002646,
-      "close_time": "2025-12-21T02:21:49.210022"
-    },
-    {
+  "positions": {
+    "BTCUSDT": {
       "symbol": "BTCUSDT",
-      "entry_price": 88275.1,
-      "close_price": 88235.9,
-      "amount": 0.00017,
-      "side": "long",
-      "pnl": -0.00666400000000198,
-      "tp": 88522.27028,
-      "sl": 87992.61968,
-      "trailing_extremum": 176.55020000000002,
-      "close_time": "2025-12-21T03:02:15.175700"
+      "entry_price": 87850.3,
+      "amount": 0.000171,
+      "side": "short",
+      "tp": 87604.31916,
+      "sl": 88131.42096000002,
+      "trailing_extremum": 175.7006
     },
-    {
+    "ETHUSDT": {
       "symbol": "ETHUSDT",
-      "entry_price": 2984.75,
-      "close_price": 2979.47,
-      "amount": 0.005026,
-      "side": "long",
-      "pnl": -0.026537280000001006,
-      "tp": 2993.1072999999997,
-      "sl": 2975.1988,
-      "trailing_extremum": 5.9695,
-      "close_time": "2025-12-21T03:02:15.504262"
+      "entry_price": 2964.49,
+      "amount": 0.00506,
+      "side": "short",
+      "tp": 2956.1894279999997,
+      "sl": 2973.976368,
+      "trailing_extremum": 5.928979999999999
     },
-    {
-      "symbol": "XRPUSDT",
-      "entry_price": 1.9262,
-      "close_price": 1.9316,
-      "amount": 7.787353,
-      "side": "long",
-      "pnl": 0.04205170620000056,
-      "tp": 1.9315933599999997,
-      "sl": 1.92003616,
-      "trailing_extremum": 0.0038523999999999997,
-      "close_time": "2025-12-21T03:02:23.452524"
-    },
-    {
+    "SOLUSDT": {
       "symbol": "SOLUSDT",
-      "entry_price": 126.43,
-      "close_price": 125.9,
-      "amount": 0.118643,
+      "entry_price": 124.19,
+      "amount": 0.120783,
       "side": "long",
-      "pnl": -0.06288079000000013,
-      "tp": 126.784004,
-      "sl": 126.02542400000002,
-      "trailing_extremum": 0.25286000000000003,
-      "close_time": "2025-12-21T03:18:52.149026"
+      "tp": 124.53773199999999,
+      "sl": 123.792592,
+      "trailing_extremum": 0.24838
     },
-    {
+    "XRPUSDT": {
+      "symbol": "XRPUSDT",
+      "entry_price": 1.9001,
+      "amount": 7.894321,
+      "side": "short",
+      "tp": 1.8947797199999998,
+      "sl": 1.90618032,
+      "trailing_extremum": 0.0038001999999999997
+    },
+    "BNBUSDT": {
       "symbol": "BNBUSDT",
-      "entry_price": 853.4,
-      "close_price": 851.2,
-      "amount": 0.017577,
-      "side": "long",
-      "pnl": -0.0386693999999988,
-      "tp": 855.7895199999999,
-      "sl": 850.66912,
-      "trailing_extremum": 1.7068,
-      "close_time": "2025-12-21T03:18:52.442686"
+      "entry_price": 846.8,
+      "amount": 0.017714,
+      "side": "short",
+      "tp": 844.42896,
+      "sl": 849.50976,
+      "trailing_extremum": 1.6936
+    },
+    "DOGEUSDT": {
+      "symbol": "DOGEUSDT",
+      "entry_price": 0.12915,
+      "amount": 116.144019,
+      "side": "short",
+      "tp": 0.12878837999999998,
+      "sl": 0.12956328,
+      "trailing_extremum": 0.0002583
+    },
+    "AVAXUSDT": {
+      "symbol": "AVAXUSDT",
+      "entry_price": 12.04,
+      "amount": 1.245847,
+      "side": "short",
+      "tp": 12.006288,
+      "sl": 12.078528,
+      "trailing_extremum": 0.024079999999999997
     }
-  ]
+  },
+  "realized_pnl": 0.0,
+  "trades": []
 }
