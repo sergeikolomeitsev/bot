@@ -70,12 +70,22 @@ class TradingLoop:
             for strat_name, strategy in strategies:
                 strategy.on_tick(market_snapshot)  # стратегия сама обрабатывает TP/SL/trailing/etc
 
-            # При необходимости можно "для информации" писать сигналы, но ТОЛЬКО для мониторинга:
+            # --- [ PATCH: автоматическое открытие позиции по сигналу ] ---
             for symbol, price in market_snapshot.items():
                 history = self.market_data.get_history(symbol)
                 for strat_name, strategy in strategies:
                     sig = strategy.generate_signal(market_snapshot, symbol, history)
-                    # Можно логировать сигналы для heartbeat или аналитики, но НИКАКОГО open/close!
+                    # Считаем, что "signal" должен быть long или short И сигнальный confidence/strength должен присутствовать
+                    if (
+                            sig
+                            and sig.get("signal") in ("long", "short")
+                            and symbol not in strategy.active_trades
+                    ):
+                        confidence = sig.get("confidence", sig.get("strength"))
+                        logger.info(
+                            f"[{strat_name}] Opening position: {symbol} side={sig['signal']} conf={confidence}"
+                        )
+                        strategy.open_position(symbol, price, confidence, sig["signal"])
 
             # heartbeat раз в 300 сек
             if self.heartbeat and (now - last_heartbeat > 300):

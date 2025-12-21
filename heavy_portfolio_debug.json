@@ -1,9 +1,226 @@
 [
   {
-    "timestamp": "2025-12-20 15:31:02.359089",
-    "message": "init_test_write",
+    "timestamp": "2025-12-21 01:47:45.469388",
+    "message": "debug_open_position_called",
     "details": {
-      "test": 1
+      "symbol": "BTCUSDT",
+      "price": 88235.4,
+      "confidence": 0.05,
+      "side": "short"
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.470623",
+    "message": "can_trade_called",
+    "details": {
+      "balance": 300.0,
+      "can_trade": true
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.470895",
+    "message": "open_position_success",
+    "details": {
+      "symbol": "BTCUSDT",
+      "price": 88235.4,
+      "amount": 0.00017,
+      "side": "short",
+      "confidence": 0.05,
+      "tp": 87988.34087999999,
+      "sl": 88517.75328,
+      "trailing": 176.4708
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.476139",
+    "message": "debug_open_position_called",
+    "details": {
+      "symbol": "ETHUSDT",
+      "price": 2982.41,
+      "confidence": 0.05,
+      "side": "long"
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.476260",
+    "message": "can_trade_called",
+    "details": {
+      "balance": 300.0,
+      "can_trade": true
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.476498",
+    "message": "open_position_success",
+    "details": {
+      "symbol": "ETHUSDT",
+      "price": 2982.41,
+      "amount": 0.005029,
+      "side": "long",
+      "confidence": 0.05,
+      "tp": 2990.7607479999997,
+      "sl": 2972.8662879999997,
+      "trailing": 5.96482
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.487243",
+    "message": "debug_open_position_called",
+    "details": {
+      "symbol": "SOLUSDT",
+      "price": 126.27,
+      "confidence": 0.05,
+      "side": "long"
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.487595",
+    "message": "can_trade_called",
+    "details": {
+      "balance": 300.0,
+      "can_trade": true
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.488651",
+    "message": "open_position_success",
+    "details": {
+      "symbol": "SOLUSDT",
+      "price": 126.27,
+      "amount": 0.118793,
+      "side": "long",
+      "confidence": 0.05,
+      "tp": 126.62355599999998,
+      "sl": 125.865936,
+      "trailing": 0.25254
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.498562",
+    "message": "debug_open_position_called",
+    "details": {
+      "symbol": "XRPUSDT",
+      "price": 1.925,
+      "confidence": 0.05,
+      "side": "short"
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.498732",
+    "message": "can_trade_called",
+    "details": {
+      "balance": 300.0,
+      "can_trade": true
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.499239",
+    "message": "open_position_success",
+    "details": {
+      "symbol": "XRPUSDT",
+      "price": 1.925,
+      "amount": 7.792208,
+      "side": "short",
+      "confidence": 0.05,
+      "tp": 1.91961,
+      "sl": 1.9311600000000002,
+      "trailing": 0.00385
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.511713",
+    "message": "debug_open_position_called",
+    "details": {
+      "symbol": "BNBUSDT",
+      "price": 852.7,
+      "confidence": 0.05,
+      "side": "short"
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.511915",
+    "message": "can_trade_called",
+    "details": {
+      "balance": 300.0,
+      "can_trade": true
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.512231",
+    "message": "open_position_success",
+    "details": {
+      "symbol": "BNBUSDT",
+      "price": 852.7,
+      "amount": 0.017591,
+      "side": "short",
+      "confidence": 0.05,
+      "tp": 850.31244,
+      "sl": 855.4286400000001,
+      "trailing": 1.7054
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.525305",
+    "message": "debug_open_position_called",
+    "details": {
+      "symbol": "DOGEUSDT",
+      "price": 0.13222,
+      "confidence": 0.05,
+      "side": "long"
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.525522",
+    "message": "can_trade_called",
+    "details": {
+      "balance": 300.0,
+      "can_trade": true
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.525849",
+    "message": "open_position_success",
+    "details": {
+      "symbol": "DOGEUSDT",
+      "price": 0.13222,
+      "amount": 113.447285,
+      "side": "long",
+      "confidence": 0.05,
+      "tp": 0.13259021599999998,
+      "sl": 0.131796896,
+      "trailing": 0.00026444
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.545449",
+    "message": "debug_open_position_called",
+    "details": {
+      "symbol": "AVAXUSDT",
+      "price": 12.26,
+      "confidence": 0.05,
+      "side": "long"
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.545654",
+    "message": "can_trade_called",
+    "details": {
+      "balance": 300.0,
+      "can_trade": true
+    }
+  },
+  {
+    "timestamp": "2025-12-21 01:47:45.546004",
+    "message": "open_position_success",
+    "details": {
+      "symbol": "AVAXUSDT",
+      "price": 12.26,
+      "amount": 1.223491,
+      "side": "long",
+      "confidence": 0.05,
+      "tp": 12.294327999999998,
+      "sl": 12.220768,
+      "trailing": 0.02452
     }
   }
 ]

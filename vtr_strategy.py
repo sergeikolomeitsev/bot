@@ -82,7 +82,10 @@ class VTRStrategy:
         trailing = self.TRAILING_PCT * price
 
         self.portfolio_logger.log("open_position_details", amount=amount, tp=tp, sl=sl, trailing=trailing)
-        self.portfolio.open_position(symbol, price, amount, side)
+        self.portfolio.open_position(
+            symbol, price, amount, side,
+            tp=tp, sl=sl, trailing_extremum=trailing
+        )
         self.active_trades[symbol] = {
             "entry": price,
             "amount": amount,
