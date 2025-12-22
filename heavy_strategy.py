@@ -58,12 +58,12 @@ class HeavyStrategy:
     def can_trade(self):
         self.logger.log("can_trade_called", current_balance=self.balance, required_balance=self.INIT_STACK, active_trades=self.active_trades)
         self.update_balance()
-        can_trade_result = self.balance >= self.INIT_STACK
+        can_trade_result = self.balance >= 0.0
         self.portfolio_logger.log("can_trade_result", balance=self.balance, can_trade=can_trade_result, active_trades=self.active_trades)
         return can_trade_result
 
     def get_trade_amount(self, price, confidence):
-        stack = max(self.balance, self.INIT_STACK)
+        stack = self.balance
         pct = max(self.MIN_RISK_PCT, min(confidence, self.MAX_RISK_PCT))
         usdt = stack * pct
         trade_amount = max(round(usdt / price, 6), 0.0001)

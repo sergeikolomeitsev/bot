@@ -56,19 +56,19 @@ class VTRStrategy:
     def can_trade(self):
         self.logger.log("can_trade_called", current_balance=self.balance, required_balance=self.INIT_STACK, active_trades=self.active_trades)
         self.update_balance()
-        can_trade_result = self.balance >= self.INIT_STACK
+        can_trade_result = self.balance >= 0.0
         self.portfolio_logger.log("can_trade_result", balance=self.balance, can_trade=can_trade_result, active_trades=self.active_trades)
         return can_trade_result
 
     def get_trade_amount(self, price, confidence):
-        stack = max(self.balance, self.INIT_STACK)
+        stack = self.balance
         pct = max(self.MIN_RISK_PCT, min(confidence, self.MAX_RISK_PCT))
         usdt = stack * pct
         trade_amount = max(round(usdt / price, 6), 0.0001)
         self.logger.log("trade_amount_calculated", price=price, confidence=confidence, trade_amount=trade_amount, balance=self.balance)
         return trade_amount
 
-    def open_position(self, symbol, price, confidence, side):
+    def open_position(self, symbol, price, confidence, side, indicators=None, market_snapshot=None):
         self.portfolio_logger.log("open_position_attempt", symbol=symbol, price=price, confidence=confidence, side=side)
         if not self.can_trade():
             self.portfolio_logger.log("open_position_blocked", symbol=symbol, reason="can_trade_returned_false", balance=self.balance, active_trades=self.active_trades)
@@ -82,16 +82,20 @@ class VTRStrategy:
         sl = price * (1 - self.STOP_LOSS_PCT - fee) if side == "long" else price * (1 + self.STOP_LOSS_PCT + fee)
         trailing = self.TRAILING_PCT * price
 
-        # -=--------- ВОТ ЭТА СТРОКА СНЯТИЯ ДЕНЕГ С БАЛАНСА:
         cost = amount * price * (1 + self.FEE_PCT + self.SPREAD_PCT)
         self.balance -= cost
-        self.logger.log("balance_decreased_on_open", balance=self.balance, cost=cost, symbol=symbol, amount=amount,
-                        price=price)
+        self.logger.log("balance_decreased_on_open", balance=self.balance, cost=cost, symbol=symbol, amount=amount, price=price)
 
         self.portfolio_logger.log("open_position_details", amount=amount, tp=tp, sl=sl, trailing=trailing)
         self.portfolio.open_position(
             symbol, price, amount, side,
-            tp=tp, sl=sl, trailing_extremum=trailing
+            tp=tp, sl=sl, trailing_extremum=trailing,
+            indicators=indicators,
+            confidence=confidence,
+            market_snapshot=market_snapshot or {},
+            balance=self.balance,
+            risk=amount,
+            open_reason="strategy_signal"
         )
         self.active_trades[symbol] = {
             "entry": price,
@@ -101,51 +105,78 @@ class VTRStrategy:
             "sl": sl,
             "trailing": trailing,
             "extremum": price,
+            "bars_lifetime": 0  # добавляем счетчик времени (свечек)
         }
         self.portfolio_logger.log("open_position_success", symbol=symbol, price=price, amount=amount, side=side, confidence=confidence, tp=tp, sl=sl, trailing=trailing)
 
-    def close_position(self, symbol, price):
-        self.portfolio_logger.log("close_position_attempt", symbol=symbol, price=price)
+    def close_position(self, symbol, price, close_reason=None):
+        self.portfolio_logger.log("close_position_attempt", symbol=symbol, price=price, close_reason=close_reason)
         if symbol not in self.active_trades:
             self.portfolio_logger.log("close_position_blocked", symbol=symbol, reason="not_active", active_trades=self.active_trades)
             return
-        self.portfolio.close_position(symbol, price)
+        self.portfolio.close_position(symbol, price, close_reason=close_reason)
         self.active_trades.pop(symbol, None)
         self.in_market.discard(symbol)
         self.update_balance()
-        self.portfolio_logger.log("close_position_success", symbol=symbol, price=price, balance=self.balance)
+        self.portfolio_logger.log("close_position_success", symbol=symbol, price=price, balance=self.balance, close_reason=close_reason)
 
     def on_tick(self, snapshot):
         self.logger.log("on_tick_called", snapshot=snapshot, active_trades=self.active_trades)
         for symbol, trade in list(self.active_trades.items()):
             price = snapshot.get(symbol)
+            # инкремент bars_lifetime на каждой новой свечке/tick
+            trade["bars_lifetime"] = trade.get("bars_lifetime", 0) + 1
+
+            # если PortfolioService поддерживает open_extras — синхронизируем туда тоже
+            if hasattr(self.portfolio, "open_extras") and symbol in self.portfolio.open_extras:
+                self.portfolio.open_extras[symbol]["bars_lifetime"] = self.portfolio.open_extras[symbol].get("bars_lifetime", 0) + 1
+
             if not price:
                 self.logger.log("on_tick_price_missing", symbol=symbol)
                 continue
+
+            close_reason = None
             if trade["side"] == "long":
                 if price > trade["extremum"]:
                     trade["extremum"] = price
                 stop = trade["extremum"] - trade["trailing"]
                 self.logger.log("on_tick_long_trade_evaluated", symbol=symbol, price=price, stop=stop, tp=trade["tp"], sl=trade["sl"])
-                if price <= stop or price >= trade["tp"] or price <= trade["sl"]:
-                    self.close_position(symbol, price)
+                if price <= stop:
+                    close_reason = "trailing_stop"
+                elif price >= trade["tp"]:
+                    close_reason = "take_profit"
+                elif price <= trade["sl"]:
+                    close_reason = "stop_loss"
+                if close_reason:
+                    self.close_position(symbol, price, close_reason=close_reason)
             else:
                 if price < trade["extremum"]:
                     trade["extremum"] = price
                 stop = trade["extremum"] + trade["trailing"]
                 self.logger.log("on_tick_short_trade_evaluated", symbol=symbol, price=price, stop=stop, tp=trade["tp"], sl=trade["sl"])
-                if price >= stop or price <= trade["tp"] or price >= trade["sl"]:
-                    self.close_position(symbol, price)
-            # Генерация сигналов для новых символов
+                if price >= stop:
+                    close_reason = "trailing_stop"
+                elif price <= trade["tp"]:
+                    close_reason = "take_profit"
+                elif price >= trade["sl"]:
+                    close_reason = "stop_loss"
+                if close_reason:
+                    self.close_position(symbol, price, close_reason=close_reason)
+        # Генерация сигналов для новых символов
         for symbol, price in snapshot.items():
             if symbol not in self.active_trades:
-                # Получай актуальную историю из self.market
                 history = None
                 if self.market is not None:
                     history = self.market.get_history(symbol)
                 signal = self.generate_signal(snapshot, symbol, history=history)
+                # индикаторы всегда пробрасываются даже при "hold"
+                indicators = signal.get("indicators") if signal else {}
                 if signal and signal["signal"] in {"long", "short"}:
-                    self.open_position(symbol, price, signal["strength"], signal["signal"])
+                    self.open_position(
+                        symbol, price, signal["strength"], signal["signal"],
+                        indicators=indicators,
+                        market_snapshot=snapshot
+                    )
 
     def generate_signal(self, snapshot, symbol, history=None):
         history = history if history is not None else []
@@ -177,13 +208,21 @@ class VTRStrategy:
 
         self.logger.log("indicators_calculated", symbol=symbol, price=price, ema_fast=ema_fast, ema_slow=ema_slow, adx=adx_val, atr=atr_val, rsi=rsi_val)
 
+        indicators = {
+            "ema_fast": ema_fast,
+            "ema_slow": ema_slow,
+            "adx": adx_val,
+            "atr": atr_val,
+            "rsi": rsi_val,
+        }
+
         if None in (ema_fast, ema_slow, adx_val, atr_val, rsi_val):
             self.logger.log("missing_indicators", symbol=symbol)
             return None
 
         if adx_val < self.MIN_ADX or atr_val / price < self.MIN_ATR_RATIO:
             self.logger.log("filter_failed", symbol=symbol, adx=adx_val, atr=atr_val, price=price)
-            return {"symbol": symbol, "signal": "hold", "strength": 0.0}
+            return {"symbol": symbol, "signal": "hold", "strength": 0.0, "indicators": indicators}
 
         confidence = min((adx_val - self.MIN_ADX) * 0.07 + 0.03, self.MAX_RISK_PCT)
         self.logger.log("confidence_calculated", symbol=symbol, confidence=confidence, min_confidence=self.MIN_CONFIDENCE)
@@ -199,7 +238,7 @@ class VTRStrategy:
             self.logger.log("signal_hold", symbol=symbol, confidence=confidence)
         self.logger.log("generate_signal_result", symbol=symbol, signal=signal, confidence=confidence)
 
-        return {"symbol": symbol, "signal": signal, "strength": confidence}
+        return {"symbol": symbol, "signal": signal, "strength": confidence, "indicators": indicators}
 
     def get_pnl(self, snapshot=None):
         realized = sum([t.get("pnl", 0) for t in self.trades])
