@@ -18,7 +18,7 @@ class VTRStrategy:
     MIN_ATR_RATIO = 0.00005
     MIN_CONFIDENCE = 0.04
 
-    def __init__(self, portfolio, risk=1.0, analyzer=None):
+    def __init__(self, portfolio, risk=1.0, analyzer=None, market=None):
         self.logger = DebugLogger("vtr_strategy_debug.json", max_records=10000)
         self.logger.enable()
         self.portfolio_logger = DebugLogger("vtr_portfolio_debug.json", max_records=10000)
@@ -26,6 +26,7 @@ class VTRStrategy:
 
         self.portfolio = portfolio
         self.analyzer = analyzer
+        self.market = market
         self.active_trades = {}
         self.balance = self.INIT_STACK
         self.in_market = set()
@@ -81,6 +82,12 @@ class VTRStrategy:
         sl = price * (1 - self.STOP_LOSS_PCT - fee) if side == "long" else price * (1 + self.STOP_LOSS_PCT + fee)
         trailing = self.TRAILING_PCT * price
 
+        # -=--------- ВОТ ЭТА СТРОКА СНЯТИЯ ДЕНЕГ С БАЛАНСА:
+        cost = amount * price * (1 + self.FEE_PCT + self.SPREAD_PCT)
+        self.balance -= cost
+        self.logger.log("balance_decreased_on_open", balance=self.balance, cost=cost, symbol=symbol, amount=amount,
+                        price=price)
+
         self.portfolio_logger.log("open_position_details", amount=amount, tp=tp, sl=sl, trailing=trailing)
         self.portfolio.open_position(
             symbol, price, amount, side,
@@ -132,7 +139,11 @@ class VTRStrategy:
             # Генерация сигналов для новых символов
         for symbol, price in snapshot.items():
             if symbol not in self.active_trades:
-                signal = self.generate_signal(snapshot, symbol, history=None)
+                # Получай актуальную историю из self.market
+                history = None
+                if self.market is not None:
+                    history = self.market.get_history(symbol)
+                signal = self.generate_signal(snapshot, symbol, history=history)
                 if signal and signal["signal"] in {"long", "short"}:
                     self.open_position(symbol, price, signal["strength"], signal["signal"])
 

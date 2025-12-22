@@ -37,25 +37,48 @@ class HeartbeatBuilder:
             out.append("• Нет данных по сделкам за сегодня")
 
         # По-прежнему можно распечатать список активных позиций при желании (вариант):
+        trades = []
+        if baseline_portfolio and hasattr(baseline_portfolio, "trades"):
+            trades = baseline_portfolio.trades
+
         positions = getattr(baseline, "positions", {})
-        if positions:
-            for sym, pos in positions.items():
+
+        # --- НОВЫЙ БЛОК ДЛЯ BASELINE ---
+        # Собираем все символы, по которым были сделки в истории или есть открытые позиции
+        all_trade_syms = set(t.get("symbol") for t in trades)
+        all_pos_syms = set(positions.keys())
+        all_syms = sorted(all_trade_syms | all_pos_syms)
+
+        for sym in all_syms:
+            pos = positions.get(sym)
+            pnl_real = sum(t.get("pnl", 0.0) for t in trades if t.get("symbol") == sym)
+            if pos:
                 price = snapshot.get(sym)
-                pnl = None
-                if hasattr(baseline, "calc_pnl"):
+                qty = pos.get("amount")
+                tp = pos.get("tp")
+                sl = pos.get("sl")
+                trailing = pos.get("trailing_extremum")
+                side = pos.get("side", "long")
+                pnl_unreal = 0.0
+                if hasattr(baseline, "portfolio") and baseline.portfolio:
                     try:
                         if price is not None:
-                            pnl = baseline.calc_pnl(sym, price)
+                            pnl_unreal = baseline.portfolio.calc_pnl(sym, price)
                     except Exception:
-                        pnl = None
-                if pnl is not None:
-                    out.append(
-                        f"{sym} [{pos.get('side','long')}] → entry {pos['entry_price']} | now {price} | PnL {pnl:.2f}"
-                    )
-                else:
-                    out.append(
-                        f"{sym} [{pos.get('side','long')}] → entry {pos['entry_price']} | now {price}"
-                    )
+                        pass
+                out.append(
+                    f"{sym} [{side}] qty={qty} → entry {pos['entry_price']} | now {price}"
+                    f" | TP={tp} SL={sl} trailing={trailing}"
+                    f" | PnL unreal: {pnl_unreal:.4f} PnL real: {pnl_real:.4f}"
+                )
+            else:
+                out.append(f"{sym} [открытых сделок нет] | PnL real: {pnl_real:.4f}")
+        out.append("")
+
+        # Добавим баланс baseline:
+        current_baseline_balance = getattr(baseline, "balance", None)
+        if current_baseline_balance is not None:
+            out.append(f"• Баланс: {current_baseline_balance:.2f}")
         out.append("")
 
         # === EXPERIMENTAL STRATEGY ===
@@ -73,25 +96,47 @@ class HeartbeatBuilder:
         else:
             out.append("• Нет данных по сделкам за сегодня")
 
+        trades_exp = []
+        if experimental_portfolio and hasattr(experimental_portfolio, "trades"):
+            trades_exp = experimental_portfolio.trades
+
         positions = getattr(experimental, "positions", {})
-        if positions:
-            for sym, pos in positions.items():
+        # --- НОВЫЙ БЛОК СТАРТ ---
+        # Соберём все символы, по которым были сделки (могут быть как с позициями, так и без)
+        all_trade_syms = set(t.get("symbol") for t in trades_exp)
+        all_pos_syms = set(positions.keys())
+        all_syms = sorted(all_trade_syms | all_pos_syms)
+
+        for sym in all_syms:
+            pos = positions.get(sym)
+            pnl_real = sum(t.get("pnl", 0.0) for t in trades_exp if t.get("symbol") == sym)
+            if pos:
                 price = snapshot.get(sym)
-                pnl = None
-                if hasattr(experimental, "calc_pnl"):
+                qty = pos.get("amount")
+                tp = pos.get("tp")
+                sl = pos.get("sl")
+                trailing = pos.get("trailing_extremum")
+                side = pos.get("side", "long")
+                pnl_unreal = 0.0
+                if hasattr(experimental, "portfolio") and experimental.portfolio:
                     try:
                         if price is not None:
-                            pnl = experimental.calc_pnl(sym, price)
+                            pnl_unreal = experimental.portfolio.calc_pnl(sym, price)
                     except Exception:
-                        pnl = None
-                if pnl is not None:
-                    out.append(
-                        f"{sym} [{pos.get('side','long')}] → entry {pos['entry_price']} | now {price} | PnL {pnl:.2f}"
-                    )
-                else:
-                    out.append(
-                        f"{sym} [{pos.get('side','long')}] → entry {pos['entry_price']} | now {price}"
-                    )
+                        pass
+                out.append(
+                    f"{sym} [{side}] qty={qty} → entry {pos['entry_price']} | now {price}"
+                    f" | TP={tp} SL={sl} trailing={trailing}"
+                    f" | PnL unreal: {pnl_unreal:.4f} PnL real: {pnl_real:.4f}"
+                )
+            else:
+                out.append(f"{sym} [открытых сделок нет] | PnL real: {pnl_real:.4f}")
+        out.append("")
+
+        # Добавим баланс experimental:
+        current_exp_balance = getattr(experimental, "balance", None)
+        if current_exp_balance is not None:
+            out.append(f"• Баланс: {current_exp_balance:.2f}")
         out.append("")
 
         # === MARKET SNAPSHOT ===
