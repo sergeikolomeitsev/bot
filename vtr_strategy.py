@@ -14,7 +14,7 @@ class VTRStrategy:
     SPREAD_PCT = 0.0005
     MAX_RISK_PCT = 0.05
     MIN_RISK_PCT = 0.01
-    MIN_ADX = 10
+    MIN_ADX = 15
     MIN_ATR_RATIO = 0.00005
     MIN_CONFIDENCE = 0.04
 
@@ -71,20 +71,44 @@ class VTRStrategy:
     def open_position(self, symbol, price, confidence, side, indicators=None, market_snapshot=None):
         self.portfolio_logger.log("open_position_attempt", symbol=symbol, price=price, confidence=confidence, side=side)
         if not self.can_trade():
-            self.portfolio_logger.log("open_position_blocked", symbol=symbol, reason="can_trade_returned_false", balance=self.balance, active_trades=self.active_trades)
+            self.portfolio_logger.log("open_position_blocked", symbol=symbol, reason="can_trade_returned_false",
+                                      balance=self.balance, active_trades=self.active_trades)
             return
         if symbol in self.active_trades:
-            self.portfolio_logger.log("open_position_blocked", symbol=symbol, reason="already_active", active_trades=list(self.active_trades.keys()))
+            self.portfolio_logger.log("open_position_blocked", symbol=symbol, reason="already_active",
+                                      active_trades=list(self.active_trades.keys()))
             return
         amount = self.get_trade_amount(price, confidence)
-        fee = self.FEE_PCT + self.SPREAD_PCT
-        tp = price * (1 + self.TAKE_PROFIT_PCT - fee) if side == "long" else price * (1 - self.TAKE_PROFIT_PCT + fee)
-        sl = price * (1 - self.STOP_LOSS_PCT - fee) if side == "long" else price * (1 + self.STOP_LOSS_PCT + fee)
-        trailing = self.TRAILING_PCT * price
+
+        # ===== Исправленный блок =====
+        atr_val = indicators.get("atr", None)
+        if atr_val is not None and atr_val > 0:
+            atr_mult_sl = 1.2
+            atr_mult_tp = 2.0
+            stop_loss_dist = atr_val * atr_mult_sl
+            take_profit_dist = atr_val * atr_mult_tp
+            trailing_dist = atr_val * 1.0
+
+            if side == "long":
+                tp = price + take_profit_dist
+                sl = price - stop_loss_dist
+                trailing = trailing_dist
+            else:
+                tp = price - take_profit_dist
+                sl = price + stop_loss_dist
+                trailing = trailing_dist
+        else:
+            fee = self.FEE_PCT + self.SPREAD_PCT
+            tp = price * (1 + self.TAKE_PROFIT_PCT - fee) if side == "long" else price * (
+                        1 - self.TAKE_PROFIT_PCT + fee)
+            sl = price * (1 - self.STOP_LOSS_PCT - fee) if side == "long" else price * (1 + self.STOP_LOSS_PCT + fee)
+            trailing = self.TRAILING_PCT * price
+        # ===== Конец исправленного блока =====
 
         cost = amount * price * (1 + self.FEE_PCT + self.SPREAD_PCT)
         self.balance -= cost
-        self.logger.log("balance_decreased_on_open", balance=self.balance, cost=cost, symbol=symbol, amount=amount, price=price)
+        self.logger.log("balance_decreased_on_open", balance=self.balance, cost=cost, symbol=symbol, amount=amount,
+                        price=price)
 
         self.portfolio_logger.log("open_position_details", amount=amount, tp=tp, sl=sl, trailing=trailing)
         self.portfolio.open_position(
@@ -107,8 +131,8 @@ class VTRStrategy:
             "extremum": price,
             "bars_lifetime": 0  # добавляем счетчик времени (свечек)
         }
-        self.portfolio_logger.log("open_position_success", symbol=symbol, price=price, amount=amount, side=side, confidence=confidence, tp=tp, sl=sl, trailing=trailing)
-
+        self.portfolio_logger.log("open_position_success", symbol=symbol, price=price, amount=amount, side=side,
+                                  confidence=confidence, tp=tp, sl=sl, trailing=trailing)
     def close_position(self, symbol, price, close_reason=None):
         self.portfolio_logger.log("close_position_attempt", symbol=symbol, price=price, close_reason=close_reason)
         if symbol not in self.active_trades:

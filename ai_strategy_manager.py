@@ -47,16 +47,20 @@ class AIStrategyManager:
         base_sig = self.baseline_strategy.generate_signal(snapshot, symbol, history)
         base_action = None
         if base_sig is not None:
+            base_signal = base_sig.get("signal")
             raw_str = float(base_sig.get("strength", 0.0))
             base_strength = raw_str * freedom
-            base_signal = base_sig.get("signal")
             pos = self.baseline_strategy.positions.get(symbol)
             price = snapshot[symbol]
             if base_signal == "long":
                 if not pos or pos.get("side") != "long":
                     if pos:
                         self.baseline_strategy.close_position(symbol, price)
-                    self.baseline_strategy.open_position(symbol, price, base_strength, "long")
+                    self.baseline_strategy.open_position(
+                        symbol, price, base_strength, "long",
+                        indicators=base_sig.get("indicators"),
+                        market_snapshot=snapshot
+                    )
                     base_action = "open_long"
                 else:
                     base_action = "hold_long"
@@ -64,7 +68,11 @@ class AIStrategyManager:
                 if not pos or pos.get("side") != "short":
                     if pos:
                         self.baseline_strategy.close_position(symbol, price)
-                    self.baseline_strategy.open_position(symbol, price, base_strength, "short")
+                    self.baseline_strategy.open_position(
+                        symbol, price, base_strength, "short",
+                        indicators=base_sig.get("indicators"),
+                        market_snapshot=snapshot
+                    )
                     base_action = "open_short"
                 else:
                     base_action = "hold_short"
@@ -75,16 +83,20 @@ class AIStrategyManager:
         exp_sig = self.experimental_strategy.generate_signal(snapshot, symbol, history)
         exp_action = None
         if exp_sig is not None:
+            exp_signal = exp_sig.get("signal")
             raw_str = float(exp_sig.get("strength", 0.0))
             exp_strength = raw_str * freedom
-            exp_signal = exp_sig.get("signal")
             pos = self.experimental_strategy.positions.get(symbol)
             price = snapshot[symbol]
             if exp_signal == "long":
                 if not pos or pos.get("side") != "long":
                     if pos:
                         self.experimental_strategy.close_position(symbol, price)
-                    self.experimental_strategy.open_position(symbol, price, exp_strength, "long")
+                    self.experimental_strategy.open_position(
+                        symbol, price, exp_strength, "long",
+                        indicators=exp_sig.get("indicators"),
+                        market_snapshot=snapshot
+                    )
                     exp_action = "open_long"
                 else:
                     exp_action = "hold_long"
@@ -92,7 +104,11 @@ class AIStrategyManager:
                 if not pos or pos.get("side") != "short":
                     if pos:
                         self.experimental_strategy.close_position(symbol, price)
-                    self.experimental_strategy.open_position(symbol, price, exp_strength, "short")
+                    self.experimental_strategy.open_position(
+                        symbol, price, exp_strength, "short",
+                        indicators=exp_sig.get("indicators"),
+                        market_snapshot=snapshot
+                    )
                     exp_action = "open_short"
                 else:
                     exp_action = "hold_short"
